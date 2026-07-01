@@ -53,17 +53,17 @@ interface SidebarItem {
 const NAV_ITEMS: SidebarItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, isCore: true },
   { name: "Schools", href: "/schools", icon: Building2, isCore: true },
-  { name: "Academic", href: "/academic", icon: GraduationCap, isCore: true },
-  { name: "SchoolYears", href: "/school-years", icon: CalendarDays, isCore: true },
+  { name: "Academic", href: "/academic", icon: GraduationCap, moduleKey: "academic" },
+  { name: "SchoolYears", href: "/school-years", icon: CalendarDays, moduleKey: "schoolYears" },
   {
     name: "Catalogs",
     icon: FolderOpen,
-    isCore: true,
+    moduleKey: "gradesCatalog",
     subItems: [
-      { name: "GradesCatalog", href: "/grades-catalog", icon: BookMarked, isCore: true },
+      { name: "GradesCatalog", href: "/grades-catalog", icon: BookMarked, moduleKey: "gradesCatalog" },
     ],
   },
-  { name: "Groups", href: "/groups", icon: Layers, isCore: true },
+  { name: "Groups", href: "/groups", icon: Layers, moduleKey: "groups" },
   { name: "Students", href: "/students", icon: Users, moduleKey: "students" },
   { name: "Teachers", href: "/teachers", icon: ClipboardList, moduleKey: "teachers" },
   { name: "Parents", href: "/parents", icon: UserCheck, moduleKey: "parents" },
