@@ -1047,11 +1047,17 @@ export default function SchoolsPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                          {modules.map((m) => (
+                          {modules.map((m) => {
+                            const sidebarKey = (
+                              m.module === "schoolYears" ? "schoolYears" :
+                              m.module === "gradesCatalog" ? "gradesCatalog" :
+                              m.module.toLowerCase()
+                            ) as keyof typeof t.sidebar;
+                            return (
                             <tr key={m.module} className="hover:bg-white/[0.01]">
                               <td className="p-3">
                                 <span className="font-semibold text-sm capitalize">
-                                  {t.sidebar[m.module.toLowerCase() as keyof typeof t.sidebar] || m.module}
+                                  {t.sidebar[sidebarKey] || m.module}
                                 </span>
                               </td>
                               <td className="p-3">
@@ -1080,7 +1086,8 @@ export default function SchoolsPage() {
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                          );
+                        })}
                         </tbody>
                       </table>
                     </div>
