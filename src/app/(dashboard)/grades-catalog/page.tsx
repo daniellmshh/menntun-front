@@ -89,13 +89,13 @@ function GradeModal({
   onSaved: (g: Grade) => void;
   t: any;
 }) {
-  const predefinedLevels = ["Preescolar", "Primaria", "Secundaria", "Preparatoria"];
+  const predefinedLevels = ["PREESCOLAR", "PRIMARIA", "SECUNDARIA"];
   
   const initialSelectValue = !grade?.level 
     ? "" 
     : predefinedLevels.includes(grade.level) 
     ? grade.level 
-    : "custom";
+    : "";
 
   const [form, setForm] = useState({
     name: grade?.name || "",
@@ -115,7 +115,7 @@ function GradeModal({
     setLoading(true);
     setError("");
     try {
-      const levelToSave = selectedLevelType === "custom" ? customLevel : selectedLevelType;
+      const levelToSave = selectedLevelType;
       let res: any;
       if (grade) {
         res = await api.patch<ApiResponse<Grade>>(`/academic/grades/${grade.id}`, {
@@ -136,7 +136,9 @@ function GradeModal({
       }
       onSaved(res.data.data);
     } catch (e: any) {
-      setError(e?.response?.data?.error || t.alerts.errorCreate);
+      const data = e?.response?.data;
+      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
+      setError(msg || data?.error || t.alerts.errorCreate);
     } finally {
       setLoading(false);
     }
@@ -205,34 +207,15 @@ function GradeModal({
             </label>
             <select
               value={selectedLevelType}
-              onChange={(e) => {
-                setSelectedLevelType(e.target.value);
-                if (e.target.value !== "custom") {
-                  setCustomLevel("");
-                }
-              }}
+              onChange={(e) => setSelectedLevelType(e.target.value)}
               className="w-full input-glass text-sm text-[var(--text-primary)] bg-black/60"
             >
               <option value="">{t.modal.levelPlaceholder}</option>
-              <option value="Preescolar">{t.modal.levelSelectOptions.preschool}</option>
-              <option value="Primaria">{t.modal.levelSelectOptions.primary}</option>
-              <option value="Secundaria">{t.modal.levelSelectOptions.secondary}</option>
-              <option value="Preparatoria">{t.modal.levelSelectOptions.highschool}</option>
-              <option value="custom">{t.modal.levelSelectOptions.custom}</option>
+              <option value="PREESCOLAR">{t.modal.levelSelectOptions.preschool}</option>
+              <option value="PRIMARIA">{t.modal.levelSelectOptions.primary}</option>
+              <option value="SECUNDARIA">{t.modal.levelSelectOptions.secondary}</option>
             </select>
           </div>
-
-          {selectedLevelType === "custom" && (
-            <div>
-              <input
-                type="text"
-                value={customLevel}
-                onChange={(e) => setCustomLevel(e.target.value)}
-                placeholder={t.modal.customLevelPlaceholder}
-                className="w-full input-glass text-sm"
-              />
-            </div>
-          )}
 
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
