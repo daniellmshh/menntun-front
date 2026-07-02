@@ -112,6 +112,7 @@ export const translations = {
       modal: {
         createTitle: "Create New School",
         editTitle: "Edit School Details",
+        isIndependent: "Is Independent Teacher / Personal Workspace",
         nameLabel: "School Name",
         codeLabel: "Identifier Code (unique, e.g. DEMO-002)",
         addressLabel: "Address (optional)",
@@ -589,6 +590,7 @@ export const translations = {
       modal: {
         createTitle: "Crear Nueva Escuela",
         editTitle: "Editar Detalles de la Escuela",
+        isIndependent: "¿Es Maestro Independiente? (Workspace Personal)",
         nameLabel: "Nombre de la Escuela",
         codeLabel: "Código Identificador (único, ej. DEMO-002)",
         addressLabel: "Dirección (opcional)",

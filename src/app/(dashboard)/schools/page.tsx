@@ -85,6 +85,7 @@ export default function SchoolsPage() {
   const [schoolPhone, setSchoolPhone] = useState("");
   const [schoolEmail, setSchoolEmail] = useState("");
   const [schoolLogoUrl, setSchoolLogoUrl] = useState("");
+  const [isIndependentTeacher, setIsIndependentTeacher] = useState(false);
 
   // Detail Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -204,6 +205,7 @@ export default function SchoolsPage() {
     setSchoolPhone("");
     setSchoolEmail("");
     setSchoolLogoUrl("");
+    setIsIndependentTeacher(false);
     setSchoolFormError(null);
     setIsSchoolModalOpen(true);
   };
@@ -225,7 +227,13 @@ export default function SchoolsPage() {
   // Submit School (Create/Edit)
   const handleSchoolSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolName.trim() || !schoolCode.trim()) {
+    
+    let finalCode = schoolCode;
+    if (isIndependentTeacher && !finalCode) {
+      finalCode = `IND-${Date.now().toString().slice(-6)}`;
+    }
+
+    if (!schoolName.trim() || !finalCode.trim()) {
       setSchoolFormError(t.login.errorFields);
       return;
     }
@@ -235,12 +243,12 @@ export default function SchoolsPage() {
       setSchoolFormError(null);
 
       const payload = {
-        name: schoolName,
-        code: schoolCode,
-        address: schoolAddress || undefined,
-        phone: schoolPhone || undefined,
-        email: schoolEmail || undefined,
-        logoUrl: schoolLogoUrl || undefined,
+        name: schoolName.trim(),
+        code: finalCode.trim(),
+        address: schoolAddress.trim() || undefined,
+        phone: schoolPhone.trim() || undefined,
+        email: schoolEmail.trim() || undefined,
+        logoUrl: schoolLogoUrl.trim() || undefined,
       };
 
       if (schoolModalMode === "create") {
@@ -800,21 +808,42 @@ export default function SchoolsPage() {
                   />
                 </div>
 
-                {/* Code Identifier */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.modal.codeLabel} *
+                {/* Is Independent Teacher Checkbox */}
+                {schoolModalMode === "create" && (
+                  <label className="flex items-center gap-2 cursor-pointer mt-2 bg-white/[0.02] p-3 rounded-lg border border-[var(--border-glass)] hover:bg-white/[0.05] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={isIndependentTeacher}
+                      onChange={(e) => {
+                        setIsIndependentTeacher(e.target.checked);
+                        if (e.target.checked) setSchoolCode("");
+                      }}
+                      disabled={schoolSubmitting}
+                      className="w-4 h-4 rounded text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] border-gray-600 bg-gray-700"
+                    />
+                    <span className="text-sm font-medium text-[var(--text-primary)]">
+                      {t.schools.modal.isIndependent || "¿Es Maestro Independiente? (Workspace Personal)"}
+                    </span>
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="COLEGIO-01"
-                    value={schoolCode}
-                    onChange={(e) => setSchoolCode(e.target.value)}
-                    className="glass-input font-mono uppercase"
-                    disabled={schoolSubmitting || schoolModalMode === "edit"}
-                  />
-                </div>
+                )}
+
+                {/* Code Identifier */}
+                {!isIndependentTeacher && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+                      {t.schools.modal.codeLabel} *
+                    </label>
+                    <input
+                      type="text"
+                      required={!isIndependentTeacher}
+                      placeholder="COLEGIO-01"
+                      value={schoolCode}
+                      onChange={(e) => setSchoolCode(e.target.value)}
+                      className="glass-input font-mono uppercase"
+                      disabled={schoolSubmitting || schoolModalMode === "edit"}
+                    />
+                  </div>
+                )}
 
                 {/* Contact Email */}
                 <div className="space-y-1.5">
@@ -1071,7 +1100,7 @@ export default function SchoolsPage() {
                                     <span className="text-xs text-[var(--text-muted)] italic">
                                       {t.schools.modules.coreActive}
                                     </span>
-                                  ) : (
+                                  ) : user?.role === UserRole.SUPER_ADMIN ? (
                                     <button
                                       onClick={() => handleToggleModule(m.module, m.active)}
                                       className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
@@ -1082,6 +1111,14 @@ export default function SchoolsPage() {
                                         <ToggleLeft size={32} className="text-[var(--text-muted)]" />
                                       )}
                                     </button>
+                                  ) : (
+                                    <div className="text-[var(--text-secondary)] opacity-50 cursor-not-allowed" title="Solo el Super Admin puede modificar módulos">
+                                      {m.active ? (
+                                        <ToggleRight size={32} className="text-[var(--accent-success)]" />
+                                      ) : (
+                                        <ToggleLeft size={32} className="text-[var(--text-muted)]" />
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               </td>

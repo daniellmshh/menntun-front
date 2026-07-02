@@ -97,8 +97,8 @@ export default function LandingPage() {
             El futuro de la gestión escolar
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-tight">
-            Gestión Inteligente para <br className="hidden md:block" />
-            <span className="gradient-accent-text">Escuelas Extraordinarias</span>
+            Gestión Inteligente para Colegios y <br className="hidden md:block" />
+            <span className="gradient-accent-text">Maestros Independientes</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl leading-relaxed">
             Menntun es un sistema modular, seguro y veloz que centraliza toda la administración educativa. 
@@ -124,6 +124,7 @@ export default function LandingPage() {
                   fill
                   className="object-cover object-top"
                   priority
+                  unoptimized
                />
             </div>
           </div>
@@ -155,22 +156,22 @@ export default function LandingPage() {
                 </ul>
               </div>
               <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
-                 <Image src="/images/img3.jpg" alt="Planeaciones IA" fill className="object-cover object-left-top" />
+                 <Image src="/images/img3.jpg" alt="Planeaciones IA" fill className="object-cover object-left-top" unoptimized />
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="order-2 md:order-1 relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
-                <Image src="/images/img2.jpg" alt="Arquitectura Modular" fill className="object-cover object-left-top" />
+                <Image src="/images/img2.jpg" alt="Arquitectura Modular" fill className="object-cover object-left-top" unoptimized />
               </div>
               <div className="space-y-6 order-1 md:order-2">
                 <div className="w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/15 flex items-center justify-center text-[var(--accent-secondary)]">
                   <Database size={28} />
                 </div>
-                <h3 className="text-2xl font-bold">Arquitectura 100% Modular y Multi-Tenancy</h3>
+                <h3 className="text-2xl font-bold">Arquitectura Modular y Arma tu Propio Paquete</h3>
                 <p className="text-[var(--text-secondary)] leading-relaxed">
-                  Paga y activa solo los módulos que tu escuela necesita. Ya sea gestión de maestros, académicos, calificaciones o planeación.
-                  Cada colegio cuenta con aislamiento de datos (Row-Level Security), garantizando privacidad absoluta.
+                  Paga y activa solo los módulos que tú o tu escuela necesitan. Ya seas un maestro independiente o un colegio completo.
+                  Elige desde planeación individual hasta control financiero multi-plantel. Cada entorno cuenta con aislamiento de datos (Row-Level Security).
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-center gap-3 text-sm font-medium"><CheckCircle2 className="text-[var(--accent-success)]" size={18} /> Activación dinámica de módulos.</li>
@@ -323,7 +324,7 @@ export default function LandingPage() {
 
               {/* Decorative Image */}
               <div className="relative w-full h-[250px] rounded-2xl overflow-hidden mt-8 opacity-80 border border-[var(--border-glass)]">
-                <Image src="/images/img4.JPG" alt="Soporte Menntun" fill className="object-cover" />
+                <Image src="/images/img4.JPG" alt="Soporte Menntun" fill className="object-cover" unoptimized />
               </div>
             </div>
           </div>
