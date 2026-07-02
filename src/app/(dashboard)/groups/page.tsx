@@ -52,10 +52,11 @@ interface SchoolYear {
 
 interface Teacher {
   id: string;
-  user: {
-    firstName: string;
-    lastName: string;
-    email: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  teacherProfile?: {
+    id: string;
   };
 }
 
@@ -379,7 +380,9 @@ function GroupDetailDrawer({
       setAssignForm({ teacherProfileId: "", isHomeroom: false });
       showAlert(t.alerts.successAssignTeacher, "success");
     } catch (e: any) {
-      showAlert(e?.response?.data?.error || t.alerts.errorAssignTeacher, "error");
+      const data = e?.response?.data;
+      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
+      showAlert(msg || data?.error || t.alerts.errorAssignTeacher, "error");
     } finally {
       setLoading(false);
     }
@@ -401,7 +404,7 @@ function GroupDetailDrawer({
 
   // Filter teachers not already assigned to this group
   const assignedIds = new Set(group.teachers?.map((t) => t.teacherProfileId) || []);
-  const assignableTeachers = teachers.filter((t) => !assignedIds.has(t.id));
+  const assignableTeachers = teachers.filter((t) => !assignedIds.has(t.teacherProfile?.id || ""));
 
   return (
     <div
@@ -529,8 +532,8 @@ function GroupDetailDrawer({
                   >
                     <option value="">{t.detail.teacherSelectLabel}</option>
                     {assignableTeachers.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.user.firstName} {t.user.lastName}
+                      <option key={t.id} value={t.teacherProfile?.id || ""}>
+                        {t.firstName} {t.lastName}
                       </option>
                     ))}
                   </select>
