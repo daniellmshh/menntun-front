@@ -433,6 +433,17 @@ function SchoolYearModal({
           endDate: form.endDate,
         });
       } else {
+        if (periods.length > 0) {
+          for (let i = 0; i < periods.length; i++) {
+            const p = periods[i];
+            if (!p.name || !p.startDate || !p.endDate) {
+              setError(`Completa todos los campos del periodo ${i + 1}.`);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+        
         const payload: any = {
           name: form.name,
           startDate: form.startDate,
@@ -444,7 +455,9 @@ function SchoolYearModal({
       }
       onSaved(res.data.data);
     } catch (e: any) {
-      setError(e?.response?.data?.error || t.alerts.errorCreate);
+      const data = e?.response?.data;
+      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
+      setError(msg || data?.error || t.alerts.errorCreate);
     } finally {
       setLoading(false);
     }
