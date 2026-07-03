@@ -22,6 +22,7 @@ import {
   UserMinus,
   UserPlus,
 } from "lucide-react";
+import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -889,12 +890,9 @@ export default function GroupsPage() {
                 <tr>
                   <td
                     colSpan={isSuperAdmin ? 7 : 6}
-                    className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]"
+                    className="p-0 border-0"
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <Activity size={16} className="animate-spin text-[var(--accent-primary)]" />
-                      <span>Cargando grupos...</span>
-                    </div>
+                    <Loader minHeight="200px" />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (

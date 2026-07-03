@@ -15,9 +15,12 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  ChevronRight,
+  AlertCircle,
   Clock,
   Layers,
 } from "lucide-react";
+import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -741,9 +744,7 @@ export default function SchoolYearsPage() {
       {/* Table */}
       <div className="glass-panel rounded-2xl border border-[var(--border-glass)] overflow-hidden flex-1">
         {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <div className="w-8 h-8 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
-          </div>
+          <Loader />
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 text-[var(--text-muted)]">
             <CalendarDays size={40} className="opacity-30" />

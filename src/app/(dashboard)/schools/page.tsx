@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
+import Loader from "@/components/shared/Loader";
 import { translations } from "@/lib/translations";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
@@ -458,8 +459,8 @@ export default function SchoolsPage() {
   // Auth Guard view
   if (authLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
+      <div className="flex-1 p-8">
+        <Loader minHeight="400px" />
       </div>
     );
   }
@@ -540,9 +541,7 @@ export default function SchoolsPage() {
 
           {/* Main Table view */}
           {loading && schools.length === 0 ? (
-            <div className="min-h-[300px] flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-            </div>
+            <Loader />
           ) : error ? (
             <div className="glass-panel p-8 text-center space-y-4 border-red-500/20">
               <p className="text-red-400 text-sm font-semibold">{error}</p>
@@ -706,9 +705,7 @@ export default function SchoolsPage() {
           </div>
 
           {loading ? (
-            <div className="min-h-[300px] flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-            </div>
+            <Loader />
           ) : error || schools.length === 0 ? (
             <div className="glass-panel p-8 text-center space-y-4 border-red-500/20">
               <p className="text-red-400 text-sm font-semibold">{error || (language === "es" ? "No se pudo cargar la información de la escuela" : "Failed to load school information")}</p>

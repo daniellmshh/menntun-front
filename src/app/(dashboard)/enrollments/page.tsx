@@ -12,6 +12,7 @@ import {
   X,
   Upload,
 } from "lucide-react";
+import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -176,8 +177,8 @@ export default function EnrollmentsPage() {
                 <tbody className="divide-y divide-[var(--border-glass)]">
                   {loading ? (
                     <tr>
-                      <td colSpan={4} className="p-8 text-center text-[var(--text-muted)]">
-                        Cargando solicitudes...
+                      <td colSpan={4} className="p-0 border-0">
+                        <Loader minHeight="200px" />
                       </td>
                     </tr>
                   ) : filteredData.length === 0 ? (

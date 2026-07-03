@@ -13,7 +13,9 @@ import {
   Building2,
   Hash,
   Activity,
+  Layers,
 } from "lucide-react";
+import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -436,11 +438,8 @@ export default function GradesCatalogPage() {
             <tbody className="divide-y divide-[var(--border-glass)]">
               {loading ? (
                 <tr>
-                  <td colSpan={isSuperAdmin ? 6 : 5} className="px-6 py-12 text-center text-sm text-[var(--text-secondary)]">
-                    <div className="flex items-center justify-center gap-2">
-                      <Activity size={16} className="animate-spin text-[var(--accent-primary)]" />
-                      <span>Cargando grados...</span>
-                    </div>
+                  <td colSpan={isSuperAdmin ? 6 : 5} className="p-0 border-0">
+                    <Loader minHeight="200px" />
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (

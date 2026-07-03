@@ -23,6 +23,7 @@ import {
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
+import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
 
@@ -364,8 +365,8 @@ export default function StudentsPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
+      <div className="flex-1 p-8">
+        <Loader minHeight="400px" />
       </div>
     );
   }
@@ -482,9 +483,7 @@ export default function StudentsPage() {
 
       {/* Main Table view */}
       {loading && students.length === 0 ? (
-        <div className="min-h-[300px] flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-[var(--accent-primary)] animate-spin" />
-        </div>
+        <Loader />
       ) : error ? (
         <div className="glass-panel p-8 text-center space-y-4 border-red-500/20">
           <p className="text-red-400 text-sm font-semibold">{error}</p>
