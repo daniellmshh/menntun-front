@@ -1,509 +1,371 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
   Sparkles,
-  Compass,
-  AlertCircle,
-  Check,
-  GraduationCap,
-  Calendar,
-  Layers,
+  Plus,
+  X,
+  ChevronRight,
+  ChevronLeft,
   BookOpen,
+  Layers,
+  Settings2,
+  Users,
+  Check,
+  AlertCircle,
+  Loader2,
+  Info,
 } from "lucide-react";
 import api from "@/lib/api/axios";
-import { generatePlanning } from "@/modules/planning/services/planning.service";
+import { generatePlanning, getPlanningCatalogo } from "@/modules/planning/services/planning.service";
 import {
   PlanningModalidad,
-  CampoFormativo,
-  EjeArticulador,
   NivelEducativo,
+  CampoSeleccionado,
+  PlanningCatalogo,
+  CatalogoCampoFormativo,
 } from "@/modules/planning/types";
-import {
-  PlanningModalidadLabels,
-  PlanningModalidadIcons,
-  CampoFormativoLabels,
-  EjeArticuladorLabels,
-} from "@/modules/planning/constants";
+import { PlanningModalidadLabels, PlanningModalidadIcons } from "@/modules/planning/constants";
 import { useLanguageStore } from "@/store/language.store";
+import { useAuthStore } from "@/store/auth.store";
 import { translations } from "@/lib/translations";
+import Loader from "@/components/shared/Loader";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const CAMPO_COLORS: Record<string, string> = {
+  LENGUAJES: "from-violet-500/20 to-violet-500/5 border-violet-500/30 text-violet-300",
+  SABERES_PENSAMIENTO_CIENTIFICO: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/30 text-cyan-300",
+  ETICA_NATURALEZA_SOCIEDADES: "from-emerald-500/20 to-emerald-500/5 border-emerald-500/30 text-emerald-300",
+  HUMANO_COMUNITARIO: "from-amber-500/20 to-amber-500/5 border-amber-500/30 text-amber-300",
+};
+
+const CAMPO_BADGE: Record<string, string> = {
+  LENGUAJES: "bg-violet-500/20 text-violet-300 border-violet-500/40",
+  SABERES_PENSAMIENTO_CIENTIFICO: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40",
+  ETICA_NATURALEZA_SOCIEDADES: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  HUMANO_COMUNITARIO: "bg-amber-500/20 text-amber-300 border-amber-500/40",
+};
+
+const STEP_LABELS = [
+  "Identificación",
+  "Curricular",
+  "Catálogos",
+  "Revisar",
+];
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function NewPlanningPage() {
   const router = useRouter();
   const { language } = useLanguageStore();
+  const { user } = useAuthStore();
   const t = translations[language];
 
-  // Form states
-  const [contextoInicial, setContextoInicial] = useState("");
-  const [selectedModalidad, setSelectedModalidad] = useState<PlanningModalidad | null>(null);
-  const [selectedCampoFormativo, setSelectedCampoFormativo] = useState<CampoFormativo | null>(null);
-  const [selectedEjes, setSelectedEjes] = useState<EjeArticulador[]>([]);
-  const [isStandalone, setIsStandalone] = useState(false);
+  // UI state
+  const [step, setStep] = useState(0); // 0-3
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Integrated mode states
+  // Catalog data from server
+  const [catalogo, setCatalogo] = useState<PlanningCatalogo | null>(null);
+
+  // Academic groups/subjects for integrated mode
   const [groups, setGroups] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
+
+  // ─── STEP 0: Identificación ────────────────────────────────────────────────
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
-
-  // Standalone mode states
+  const [isStandalone, setIsStandalone] = useState(false);
   const [standaloneLevel, setStandaloneLevel] = useState<NivelEducativo>(NivelEducativo.PREESCOLAR);
-  const [standaloneGradeOrder, setStandaloneGradeOrder] = useState<number>(1);
+  const [standaloneGradeOrder, setStandaloneGradeOrder] = useState(1);
+  const [periodoProyecto, setPeriodoProyecto] = useState("");
+  const [modalidad, setModalidad] = useState<PlanningModalidad>(PlanningModalidad.PROYECTOS);
 
-  // Loading & Error states
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadingStep, setLoadingStep] = useState(0);
+  // ─── STEP 1: Curricular ────────────────────────────────────────────────────
+  const [camposSeleccionados, setCamposSeleccionados] = useState<CampoSeleccionado[]>([]);
+  const [ejesSeleccionados, setEjesSeleccionados] = useState<string[]>([]);
+  // Temp UI state for adding a campo+contenido
+  const [addingCampoId, setAddingCampoId] = useState<string>("");
+  const [addingContenidoId, setAddingContenidoId] = useState<string>("");
 
-  // Fetch Academic data
+  // ─── STEP 2: Catálogos Sara ────────────────────────────────────────────────
+  const [problematica, setProblematica] = useState("");
+  const [problematicaCustom, setProblematicaCustom] = useState("");
+  const [proposito, setProposito] = useState("");
+  const [instrSeleccionados, setInstrSeleccionados] = useState<string[]>([]);
+  const [ajustesSeleccionados, setAjustesSeleccionados] = useState<string[]>([]);
+  const [pmcSeleccionados, setPmcSeleccionados] = useState<string[]>([]);
+
+  // Load catalog + academic data
   useEffect(() => {
-    const fetchAcademicData = async () => {
+    const loadData = async () => {
       try {
-        const [groupsRes, subjectsRes] = await Promise.all([
+        const [catRes, groupsRes, subjectsRes] = await Promise.all([
+          getPlanningCatalogo(),
           api.get("/academic/groups"),
           api.get("/academic/subjects"),
         ]);
+        if (catRes.data) setCatalogo(catRes.data);
         const fetchedGroups = groupsRes.data?.data || [];
         const fetchedSubjects = subjectsRes.data?.data || [];
         setGroups(fetchedGroups);
         setSubjects(fetchedSubjects);
-
-        // If no groups/subjects exist, default to standalone
         if (fetchedGroups.length === 0 || fetchedSubjects.length === 0) {
           setIsStandalone(true);
         } else {
           setSelectedGroupId(fetchedGroups[0].id);
           setSelectedSubjectId(fetchedSubjects[0].id);
         }
-      } catch (err) {
-        console.error("Error fetching academic data for planning:", err);
-        setIsStandalone(true);
+      } catch {
+        setError("No se pudo cargar el catálogo curricular.");
+      } finally {
+        setLoadingCatalog(false);
       }
     };
-    fetchAcademicData();
+    loadData();
   }, []);
 
-  // Loading text rotation
-  useEffect(() => {
-    if (!loading) return;
-    const interval = setInterval(() => {
-      setLoadingStep((prev) => (prev + 1) % 4);
-    }, 7000);
-    return () => clearInterval(interval);
-  }, [loading]);
+  // ─── Campo+contenido helpers ───────────────────────────────────────────────
 
-  const loadingMessages = [
-    "Analizando contexto y buscando contenidos en el programa de estudios SEP...",
-    "Generando propuesta didáctica basada en la Nueva Escuela Mexicana...",
-    "Estructurando fases del proyecto y recursos sugeridos...",
-    "Casi listo! Finalizando la planeación didáctica con IA...",
-  ];
-
-  const handleToggleEje = (eje: EjeArticulador) => {
-    if (selectedEjes.includes(eje)) {
-      setSelectedEjes((prev) => prev.filter((item) => item !== eje));
-    } else {
-      setSelectedEjes((prev) => [...prev, eje]);
+  const handleAddCampo = () => {
+    if (!addingCampoId || !addingContenidoId) return;
+    const exists = camposSeleccionados.some(
+      (c) => c.campoFormativoId === addingCampoId && c.contenidoId === addingContenidoId
+    );
+    if (!exists) {
+      setCamposSeleccionados((prev) => [
+        ...prev,
+        { campoFormativoId: addingCampoId, contenidoId: addingContenidoId },
+      ]);
     }
+    setAddingCampoId("");
+    setAddingContenidoId("");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const handleRemoveCampo = (idx: number) => {
+    setCamposSeleccionados((prev) => prev.filter((_, i) => i !== idx));
+  };
 
-    // Validation
-    if (contextoInicial.trim().length < 20) {
-      setError(language === "es" ? "El contexto inicial debe tener al menos 20 caracteres." : "The initial context must be at least 20 characters.");
-      return;
+  const toggleEje = (eje: string) => {
+    setEjesSeleccionados((prev) =>
+      prev.includes(eje) ? prev.filter((e) => e !== eje) : [...prev, eje]
+    );
+  };
+
+  const toggleMulti = (
+    value: string,
+    list: string[],
+    setter: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setter((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  };
+
+  const getCampoInfo = (campoId: string): CatalogoCampoFormativo | undefined =>
+    catalogo?.camposFormativos.find((c) => c.id === campoId);
+
+  const getContenidoName = (campoId: string, contenidoId: string): string => {
+    const campo = getCampoInfo(campoId);
+    return campo?.contenidos.find((c) => c.id === contenidoId)?.nombre || contenidoId;
+  };
+
+  // ─── Validation ───────────────────────────────────────────────────────────
+
+  const canProceed = (): boolean => {
+    if (step === 0) return !!modalidad && !!periodoProyecto;
+    if (step === 1) return camposSeleccionados.length > 0 && ejesSeleccionados.length > 0;
+    if (step === 2) {
+      const prob = problematica === "__custom__" ? problematicaCustom : problematica;
+      return !!prob.trim() && !!proposito.trim();
     }
+    return true;
+  };
 
-    setLoading(true);
+  // ─── Submit ───────────────────────────────────────────────────────────────
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
     try {
-      const payload: any = {
-        contextoInicial,
+      const prob = problematica === "__custom__" ? problematicaCustom : problematica;
+      const dto = {
+        camposSeleccionados,
+        modalidad,
+        ejesArticuladores: ejesSeleccionados,
+        groupId: !isStandalone ? selectedGroupId || undefined : undefined,
+        subjectId: !isStandalone ? selectedSubjectId || undefined : undefined,
+        standaloneLevel: isStandalone ? standaloneLevel : undefined,
+        standaloneGradeOrder: isStandalone ? standaloneGradeOrder : undefined,
+        periodoProyecto,
+        problematica: prob,
+        proposito,
+        instrumentoEvaluacion: instrSeleccionados,
+        ajustesRazonables: ajustesSeleccionados,
+        actividadesPmc: pmcSeleccionados,
       };
-
-      if (selectedModalidad) payload.modalidad = selectedModalidad;
-      if (selectedCampoFormativo) payload.campoFormativo = selectedCampoFormativo;
-      if (selectedEjes.length > 0) payload.ejesArticuladores = selectedEjes;
-
-      if (isStandalone) {
-        payload.standaloneLevel = standaloneLevel;
-        payload.standaloneGradeOrder = standaloneGradeOrder;
-      } else {
-        payload.groupId = selectedGroupId;
-        payload.subjectId = selectedSubjectId;
-      }
-
-      const res = await generatePlanning(payload);
-
-      if (res.error) {
-        setError(res.error);
-        setLoading(false);
-      } else if (res.data?.planning?.id) {
-        // Guardar sugerencia temporal en sessionStorage para mostrarla en la vista de detalle
-        if (res.data.sugerenciaIA) {
-          sessionStorage.setItem(`sugerencia_ia_${res.data.planning.id}`, JSON.stringify(res.data.sugerenciaIA));
-        }
+      const res = await generatePlanning(dto);
+      if (res.data?.planning?.id) {
         router.push(`/planning/${res.data.planning.id}`);
-      } else {
-        setError(language === "es" ? "Ocurrió un error inesperado al generar la planeación." : "An unexpected error occurred while generating the plan.");
-        setLoading(false);
       }
     } catch (err: any) {
-      console.error("Error generating planning:", err);
-      setError(err?.response?.data?.error || err.message || "Failed to generate plan");
-      setLoading(false);
+      const msg = err?.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(", ") : msg || "Error al generar la planeación.");
+    } finally {
+      setGenerating(false);
     }
   };
 
+  // ─── Rendering ────────────────────────────────────────────────────────────
+
+  if (loadingCatalog) return <Loader />;
+
   return (
-    <div className="space-y-6">
-      {/* Header breadcrumb */}
-      <div className="flex items-center gap-4">
+    <div className="animate-fade-in">
+      {/* Back */}
+      <div className="mb-6 flex items-center gap-3">
         <Link
           href="/planning"
-          className="p-2 rounded-lg border border-[var(--border-glass)] bg-white/[0.02] hover:bg-white/[0.08] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+          className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm"
         >
           <ArrowLeft size={16} />
+          Regresar a Planeaciones
         </Link>
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <Sparkles className="text-[var(--accent-primary)]" size={24} />
-            <span>
-              {language === "es" ? "Nueva Planeación con IA" : "New AI-Powered Lesson Plan"}
-            </span>
-          </h1>
-          <p className="text-xs text-[var(--text-secondary)]">
-            {language === "es"
-              ? "Diseña un proyecto de clase adaptado a la Nueva Escuela Mexicana mediante inteligencia artificial y RAG"
-              : "Design a classroom project aligned with the New Mexican School guidelines using AI & RAG"}
-          </p>
+      </div>
+
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold gradient-text mb-2">Nueva Planeación</h1>
+        <p className="text-[var(--text-secondary)]">
+          Formato NEM — Matriz Multidimensional e Integradora
+        </p>
+      </div>
+
+      {/* Step indicator */}
+      <div className="mb-8">
+        <div className="flex items-center gap-2">
+          {STEP_LABELS.map((label, idx) => (
+            <React.Fragment key={idx}>
+              <div
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  idx === step
+                    ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40"
+                    : idx < step
+                    ? "bg-[var(--accent-success)]/20 text-[var(--accent-success)] border border-[var(--accent-success)]/30"
+                    : "text-[var(--text-muted)] border border-[var(--border-glass)]"
+                }`}
+              >
+                {idx < step ? <Check size={14} /> : <span className="w-4 text-center">{idx + 1}</span>}
+                <span className="hidden sm:inline">{label}</span>
+              </div>
+              {idx < STEP_LABELS.length - 1 && (
+                <div className={`flex-1 h-px ${idx < step ? "bg-[var(--accent-success)]/30" : "bg-[var(--border-glass)]"}`} />
+              )}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
-      {loading ? (
-        <div className="glass-panel p-12 text-center flex flex-col items-center justify-center space-y-6 animate-pulse border border-[var(--border-glass)] min-h-[400px]">
-          <div className="relative">
-            <div className="w-16 h-16 rounded-full border-4 border-[var(--border-glass)] border-t-[var(--accent-primary)] border-r-[var(--accent-secondary)] animate-spin" />
-            <Sparkles className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[var(--accent-secondary)]" size={20} />
-          </div>
-          <div className="space-y-2 max-w-md">
-            <h3 className="font-bold text-lg text-[var(--text-primary)]">
-              {language === "es" ? "Generando Planeación..." : "Generating Plan..."}
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)]">
-              {loadingMessages[loadingStep]}
-            </p>
-            <p className="text-[10px] text-[var(--text-muted)] italic mt-4">
-              {language === "es"
-                ? "Este proceso puede demorar hasta 30 segundos mientras buscamos los mejores contenidos SEP."
-                : "This process may take up to 30 seconds as we search for the best SEP curriculum contents."}
-            </p>
-          </div>
+      {/* Error banner */}
+      {error && (
+        <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-[var(--accent-danger)]/10 border border-[var(--accent-danger)]/30 text-[var(--accent-danger)]">
+          <AlertCircle size={18} className="shrink-0 mt-0.5" />
+          <p className="text-sm">{error}</p>
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="p-4 rounded-xl bg-[var(--accent-danger)]/10 border border-[var(--accent-danger)]/35 text-[var(--accent-danger)] text-sm flex items-center gap-3">
-              <AlertCircle size={18} className="shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+      )}
 
-          {/* Contexto Inicial */}
-          <div className="glass-panel p-6 border border-[var(--border-glass)] space-y-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-primary)]">
-                  {language === "es" ? "1. Contexto Inicial de la Planeación" : "1. Initial Planning Context"}
-                </label>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {language === "es"
-                    ? "Describe de qué quieres tratar tu clase, intereses o problemáticas de tus estudiantes"
-                    : "Describe what your class is about, students' interests, or classroom problems"}
-                </span>
-              </div>
-              <span className={`text-xs font-mono font-bold ${contextoInicial.trim().length >= 20 ? "text-[var(--accent-success)]" : "text-[var(--text-muted)]"}`}>
-                {contextoInicial.trim().length} / 20 min
-              </span>
-            </div>
-
-            <textarea
-              value={contextoInicial}
-              onChange={(e) => setContextoInicial(e.target.value)}
-              placeholder={
-                language === "es"
-                  ? "Ej: Quiero hacer un proyecto sobre el cuidado de los dientes porque mis alumnos comen muchos dulces y hemos notado caries..."
-                  : "e.g., I want to do a project about dental hygiene because my students eat a lot of candy and we have noticed cavities..."
-              }
-              className="glass-input w-full min-h-[120px] font-sans text-sm focus:border-[var(--accent-primary)]"
-              required
-            />
-          </div>
-
-          {/* Selector de Modalidades */}
-          <div className="glass-panel p-6 border border-[var(--border-glass)] space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)]">
-                {language === "es" ? "2. Modalidad Pedagógica (NEM)" : "2. Pedagogical Modality (NEM)"}
-              </label>
-              <span className="text-xs text-[var(--text-secondary)]">
-                {language === "es"
-                  ? "Selecciona la modalidad para estructurar tu planeación (opcional, la IA sugerirá una si no la seleccionas)"
-                  : "Select the modality to structure your plan (optional, AI will suggest one if left empty)"}
-              </span>
+      {/* ──── STEP 0: Identificación ──── */}
+      {step === 0 && (
+        <div className="space-y-6">
+          {/* Mode toggle */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+              <Users size={20} className="text-[var(--accent-primary)]" />
+              Asignación del Grupo
+            </h2>
+            <div className="flex gap-3 mb-5">
+              <button
+                onClick={() => setIsStandalone(false)}
+                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
+                  !isStandalone
+                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
+                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
+                }`}
+              >
+                Grupo existente
+              </button>
+              <button
+                onClick={() => setIsStandalone(true)}
+                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
+                  isStandalone
+                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
+                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
+                }`}
+              >
+                Modo independiente
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.keys(PlanningModalidadLabels).map((key) => {
-                const enumKey = key as PlanningModalidad;
-                const Icon = PlanningModalidadIcons[enumKey] || Compass;
-                const isSelected = selectedModalidad === enumKey;
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedModalidad(isSelected ? null : enumKey)}
-                    className={`p-4 rounded-xl border text-left flex gap-4 transition-all duration-300 relative group overflow-hidden
-                      ${
-                        isSelected
-                          ? "bg-[hsla(263,90%,60%,0.1)] border-[var(--accent-primary)] shadow-glow"
-                          : "border-[var(--border-glass)] bg-white/[0.01] hover:bg-white/[0.04] hover:border-[var(--border-glass)]"
-                      }
-                    `}
-                  >
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform group-hover:scale-110
-                      ${isSelected ? "bg-[var(--accent-primary)] text-white" : "bg-white/[0.04] text-[var(--text-secondary)]"}`}
-                    >
-                      <Icon size={20} />
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-sm font-bold text-[var(--text-primary)] flex items-center gap-2">
-                        <span>{PlanningModalidadLabels[key]}</span>
-                        {isSelected && <Check size={14} className="text-[var(--accent-primary-light)]" />}
-                      </div>
-                      <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
-                        {enumKey === PlanningModalidad.PROYECTOS && (language === "es" ? "Proyectos comunitarios u orientados a resolver problemas." : "Community or problem-oriented projects.")}
-                        {enumKey === PlanningModalidad.ABJ && (language === "es" ? "Aprendizaje basado en juegos didácticos interactivos." : "Learning based on interactive educational games.")}
-                        {enumKey === PlanningModalidad.CENTROS_INTERES && (language === "es" ? "Basado en los intereses de los niños organizados en temas." : "Based on children's interests organized into topics.")}
-                        {enumKey === PlanningModalidad.TALLERES_CRITICOS && (language === "es" ? "Investigación activa, talleres creativos y pensamiento analítico." : "Active research, creative workshops, and analytical thinking.")}
-                        {enumKey === PlanningModalidad.RINCONES_APRENDIZAJE && (language === "es" ? "Espacios físicos delimitados dentro del aula con fines específicos." : "Physical delimited areas inside the classroom with specific goals.")}
-                        {enumKey === PlanningModalidad.UNIDADES_DIDACTICAS && (language === "es" ? "Secuencias de aprendizaje estructuradas temáticamente." : "Thematically structured learning sequences.")}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selector de Campos Formativos */}
-          <div className="glass-panel p-6 border border-[var(--border-glass)] space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)]">
-                {language === "es" ? "3. Campo Formativo (NEM)" : "3. Formative Field (NEM)"}
-              </label>
-              <span className="text-xs text-[var(--text-secondary)]">
-                {language === "es"
-                  ? "Selecciona el área del conocimiento a la cual pertenece este proyecto (opcional)"
-                  : "Select the area of knowledge to which this project belongs (optional)"}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.keys(CampoFormativoLabels).map((key) => {
-                const enumKey = key as CampoFormativo;
-                const isSelected = selectedCampoFormativo === enumKey;
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedCampoFormativo(isSelected ? null : enumKey)}
-                    className={`p-4 rounded-xl border text-left flex gap-3 items-center transition-all duration-300 relative group
-                      ${
-                        isSelected
-                          ? "bg-[hsla(190,95%,50%,0.05)] border-[var(--accent-secondary)]"
-                          : "border-[var(--border-glass)] bg-white/[0.01] hover:bg-white/[0.04]"
-                      }
-                    `}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0
-                      ${isSelected ? "bg-[var(--accent-secondary)] text-black" : "bg-white/[0.04] text-[var(--text-secondary)]"}`}
-                    >
-                      <BookOpen size={16} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-bold text-[var(--text-primary)] flex items-center justify-between">
-                        <span>{CampoFormativoLabels[key]}</span>
-                        {isSelected && <Check size={14} className="text-[var(--accent-secondary)]" />}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selector Múltiple de Ejes Articuladores */}
-          <div className="glass-panel p-6 border border-[var(--border-glass)] space-y-4">
-            <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)]">
-                {language === "es" ? "4. Ejes Articuladores" : "4. Articulating Axes"}
-              </label>
-              <span className="text-xs text-[var(--text-secondary)]">
-                {language === "es"
-                  ? "Selecciona uno o más ejes de integración de saberes de la NEM (opcional)"
-                  : "Select one or more axes of knowledge integration of the NEM (optional)"}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              {Object.keys(EjeArticuladorLabels).map((key) => {
-                const enumKey = key as EjeArticulador;
-                const isSelected = selectedEjes.includes(enumKey);
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleToggleEje(enumKey)}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold select-none border transition-all duration-200 flex items-center gap-2
-                      ${
-                        isSelected
-                          ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary-light)] border-[var(--accent-primary)]/50 shadow-glow"
-                          : "bg-white/[0.02] text-[var(--text-secondary)] border-[var(--border-glass)] hover:bg-white/[0.06] hover:border-[var(--text-muted)]"
-                      }
-                    `}
-                  >
-                    <span>{EjeArticuladorLabels[key]}</span>
-                    {isSelected && <Check size={12} className="text-[var(--accent-primary-light)]" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Datos de Identificación (Integrated vs Standalone) */}
-          <div className="glass-panel p-6 border border-[var(--border-glass)] space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border-glass)] pb-4 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-primary)]">
-                  {language === "es" ? "5. Identificación del Grupo / Nivel" : "5. Group / Level Identification"}
-                </label>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {language === "es"
-                    ? "Elige si la planeación se asocia a la estructura escolar o de forma libre"
-                    : "Choose whether the plan associates with the school structure or is standalone"}
-                </span>
-              </div>
-
-              {/* Mode Toggle Switch */}
-              <div className="flex items-center gap-3">
-                <span className={`text-xs font-bold transition-colors ${!isStandalone ? "text-[var(--accent-primary-light)]" : "text-[var(--text-muted)]"}`}>
-                  {language === "es" ? "Integrado a Estructura" : "Integrated to School"}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setIsStandalone(!isStandalone)}
-                  className={`w-11 h-6 rounded-full transition-colors relative focus:outline-none border border-white/10
-                    ${isStandalone ? "bg-[var(--accent-primary)]" : "bg-white/[0.04]"}`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full bg-white absolute top-0.5 transition-transform shadow
-                      ${isStandalone ? "right-1" : "left-1"}`}
-                  />
-                </button>
-                <span className={`text-xs font-bold transition-colors ${isStandalone ? "text-[var(--accent-primary-light)]" : "text-[var(--text-muted)]"}`}>
-                  {language === "es" ? "Modo Libre (Manual)" : "Standalone Mode"}
-                </span>
-              </div>
-            </div>
-
-            {isStandalone ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                {/* Standalone Level */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {language === "es" ? "Nivel Educativo" : "Educational Stage"}
-                  </label>
+            {!isStandalone ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Grupo</label>
                   <select
-                    value={standaloneLevel}
-                    onChange={(e) => setStandaloneLevel(e.target.value as NivelEducativo)}
-                    className="glass-input w-full bg-[var(--bg-surface)] text-sm h-[46px]"
+                    value={selectedGroupId}
+                    onChange={(e) => setSelectedGroupId(e.target.value)}
+                    className="glass-input w-full"
                   >
-                    <option value={NivelEducativo.PREESCOLAR}>
-                      {language === "es" ? "Preescolar" : "Preschool"}
-                    </option>
-                    <option value={NivelEducativo.PRIMARIA}>
-                      {language === "es" ? "Primaria" : "Primary"}
-                    </option>
-                    <option value={NivelEducativo.SECUNDARIA}>
-                      {language === "es" ? "Secundaria" : "Secondary"}
-                    </option>
+                    {groups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.grade?.name} — {g.name} {g.section}
+                      </option>
+                    ))}
                   </select>
                 </div>
-
-                {/* Standalone Order */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {language === "es" ? "Grado Escolar (Orden)" : "Grade Order"}
-                  </label>
+                <div>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Materia</label>
                   <select
-                    value={standaloneGradeOrder}
-                    onChange={(e) => setStandaloneGradeOrder(parseInt(e.target.value))}
-                    className="glass-input w-full bg-[var(--bg-surface)] text-sm h-[46px]"
+                    value={selectedSubjectId}
+                    onChange={(e) => setSelectedSubjectId(e.target.value)}
+                    className="glass-input w-full"
                   >
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                      <option key={num} value={num}>
-                        {num}° {language === "es" ? "Grado" : "Grade"}
+                    {subjects.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                {/* Integrated Group */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {language === "es" ? "Grupo Escolar" : "Class Group"}
-                  </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Nivel educativo</label>
                   <select
-                    value={selectedGroupId}
-                    onChange={(e) => setSelectedGroupId(e.target.value)}
-                    className="glass-input w-full bg-[var(--bg-surface)] text-sm h-[46px]"
-                    required
+                    value={standaloneLevel}
+                    onChange={(e) => setStandaloneLevel(e.target.value as NivelEducativo)}
+                    className="glass-input w-full"
                   >
-                    {groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.grade?.name || ""} - {group.name} {group.section ? `(${group.section})` : ""} - {group.schoolYear?.name || ""}
-                      </option>
-                    ))}
+                    <option value="PREESCOLAR">Preescolar</option>
+                    <option value="PRIMARIA">Primaria</option>
+                    <option value="SECUNDARIA">Secundaria</option>
                   </select>
                 </div>
-
-                {/* Integrated Subject */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    {language === "es" ? "Materia" : "Subject"}
-                  </label>
+                <div>
+                  <label className="block text-sm text-[var(--text-secondary)] mb-2">Grado</label>
                   <select
-                    value={selectedSubjectId}
-                    onChange={(e) => setSelectedSubjectId(e.target.value)}
-                    className="glass-input w-full bg-[var(--bg-surface)] text-sm h-[46px]"
-                    required
+                    value={standaloneGradeOrder}
+                    onChange={(e) => setStandaloneGradeOrder(Number(e.target.value))}
+                    className="glass-input w-full"
                   >
-                    {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name} ({subject.code})
-                      </option>
+                    {[1, 2, 3, 4, 5, 6].map((g) => (
+                      <option key={g} value={g}>{g}°</option>
                     ))}
                   </select>
                 </div>
@@ -511,25 +373,475 @@ export default function NewPlanningPage() {
             )}
           </div>
 
-          {/* Action button */}
-          <div className="flex justify-end gap-4">
-            <Link
-              href="/planning"
-              className="glass-button-secondary px-6 py-3 text-sm font-semibold rounded-xl"
-            >
-              {language === "es" ? "Cancelar" : "Cancel"}
-            </Link>
-            <button
-              type="submit"
-              disabled={contextoInicial.trim().length < 20}
-              className="glass-button px-8 py-3 text-sm font-bold rounded-xl flex items-center gap-2 shadow-glow disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Sparkles size={16} />
-              <span>{language === "es" ? "Generar planeación con IA" : "Generate Lesson Plan with AI"}</span>
-            </button>
+          {/* Periodo */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+              <Settings2 size={20} className="text-[var(--accent-primary)]" />
+              Datos del Proyecto
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-[var(--text-secondary)] mb-2">
+                  Periodo del Proyecto <span className="text-[var(--accent-danger)]">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. 8 AL 19 DE JUNIO DE 2026"
+                  value={periodoProyecto}
+                  onChange={(e) => setPeriodoProyecto(e.target.value)}
+                  className="glass-input w-full"
+                />
+              </div>
+            </div>
           </div>
-        </form>
+
+          {/* Modalidad */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+              <Layers size={20} className="text-[var(--accent-primary)]" />
+              Metodología de Trabajo <span className="text-[var(--accent-danger)]">*</span>
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {catalogo?.metodologias.map((met) => {
+                const Icon = PlanningModalidadIcons[met.id] || BookOpen;
+                const isSelected = modalidad === met.id;
+                return (
+                  <button
+                    key={met.id}
+                    onClick={() => setModalidad(met.id as PlanningModalidad)}
+                    className={`p-4 rounded-xl border text-left transition-all group ${
+                      isSelected
+                        ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/50 shadow-glow"
+                        : "border-[var(--border-glass)] hover:border-[var(--accent-primary)]/30"
+                    }`}
+                  >
+                    <Icon
+                      size={22}
+                      className={`mb-2 ${isSelected ? "text-[var(--accent-primary)]" : "text-[var(--text-secondary)]"}`}
+                    />
+                    <p className={`text-sm font-semibold ${isSelected ? "text-[var(--accent-primary)]" : "text-[var(--text-primary)]"}`}>
+                      {met.siglas}
+                    </p>
+                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mt-1">{met.nombre}</p>
+                    {isSelected && (
+                      <div className="mt-2 pt-2 border-t border-[var(--accent-primary)]/20">
+                        <p className="text-xs text-[var(--text-secondary)] line-clamp-3">{met.definicion}</p>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* ──── STEP 1: Fundamentación Curricular ──── */}
+      {step === 1 && catalogo && (
+        <div className="space-y-6">
+          {/* Agregar campo + contenido */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+              <BookOpen size={20} className="text-[var(--accent-primary)]" />
+              Campos Formativos y Contenidos
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-5">
+              Selecciona uno o más campos formativos con sus contenidos (plan globalizador e integrador).
+            </p>
+
+            {/* Add row */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-5">
+              <select
+                value={addingCampoId}
+                onChange={(e) => { setAddingCampoId(e.target.value); setAddingContenidoId(""); }}
+                className="glass-input flex-1"
+              >
+                <option value="">— Seleccionar Campo Formativo —</option>
+                {catalogo.camposFormativos.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+              <select
+                value={addingContenidoId}
+                onChange={(e) => setAddingContenidoId(e.target.value)}
+                className="glass-input flex-1"
+                disabled={!addingCampoId}
+              >
+                <option value="">— Seleccionar Contenido —</option>
+                {catalogo.camposFormativos
+                  .find((c) => c.id === addingCampoId)
+                  ?.contenidos.map((ct) => (
+                    <option key={ct.id} value={ct.id}>{ct.nombre}</option>
+                  ))}
+              </select>
+              <button
+                onClick={handleAddCampo}
+                disabled={!addingCampoId || !addingContenidoId}
+                className="glass-button px-4 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Plus size={16} />
+                Agregar
+              </button>
+            </div>
+
+            {/* Selected campos */}
+            {camposSeleccionados.length === 0 ? (
+              <div className="text-center py-8 text-[var(--text-muted)] text-sm border border-dashed border-[var(--border-glass)] rounded-xl">
+                Agrega al menos un Campo Formativo + Contenido
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {camposSeleccionados.map((sel, idx) => {
+                  const campo = getCampoInfo(sel.campoFormativoId);
+                  const contenido = campo?.contenidos.find((c) => c.id === sel.contenidoId);
+                  const colorClass = CAMPO_COLORS[sel.campoFormativoId] || "";
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-start gap-3 p-4 rounded-xl border bg-gradient-to-r ${colorClass}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-wider mb-1 opacity-80">
+                          {campo?.nombre}
+                        </p>
+                        <p className="text-sm text-[var(--text-primary)] leading-relaxed">
+                          {contenido?.nombre}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] mt-1">ID: {sel.contenidoId}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveCampo(idx)}
+                        className="shrink-0 p-1.5 rounded-lg hover:bg-[var(--accent-danger)]/20 text-[var(--text-secondary)] hover:text-[var(--accent-danger)] transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Ejes articuladores */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+              <Layers size={20} className="text-[var(--accent-secondary)]" />
+              Ejes Articuladores <span className="text-[var(--accent-danger)]">*</span>
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              Selecciona los ejes que transversalizan esta planeación.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {catalogo.ejesArticuladores.map((eje) => {
+                const isSelected = ejesSeleccionados.includes(eje);
+                return (
+                  <button
+                    key={eje}
+                    onClick={() => toggleEje(eje)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                      isSelected
+                        ? "bg-[var(--accent-secondary)]/20 border-[var(--accent-secondary)]/50 text-[var(--accent-secondary)]"
+                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-secondary)]/30"
+                    }`}
+                  >
+                    {isSelected && <Check size={12} className="inline mr-1.5" />}
+                    {eje}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── STEP 2: Catálogos operativos Sara ──── */}
+      {step === 2 && catalogo && (
+        <div className="space-y-6">
+          {/* Problemática */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+              Problemática del Diagnóstico <span className="text-[var(--accent-danger)]">*</span>
+            </h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              La situación del contexto comunitario o escolar que motiva el proyecto.
+            </p>
+            <div className="space-y-2 mb-3">
+              {catalogo.catalogosOperativos.problematicas.map((prob) => (
+                <button
+                  key={prob}
+                  onClick={() => { setProblematica(prob); setProblematicaCustom(""); }}
+                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                    problematica === prob
+                      ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
+                      : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
+                  }`}
+                >
+                  {problematica === prob && <Check size={14} className="inline mr-2 text-[var(--accent-primary)]" />}
+                  {prob}
+                </button>
+              ))}
+              <button
+                onClick={() => setProblematica("__custom__")}
+                className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                  problematica === "__custom__"
+                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
+                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
+                }`}
+              >
+                ✏️ Escribir una problemática personalizada...
+              </button>
+            </div>
+            {problematica === "__custom__" && (
+              <textarea
+                value={problematicaCustom}
+                onChange={(e) => setProblematicaCustom(e.target.value)}
+                placeholder="Describe la problemática de tu diagnóstico..."
+                rows={3}
+                className="glass-input w-full"
+              />
+            )}
+          </div>
+
+          {/* Propósito */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
+              Propósito / Justificación <span className="text-[var(--accent-danger)]">*</span>
+            </h2>
+            <textarea
+              value={proposito}
+              onChange={(e) => setProposito(e.target.value)}
+              placeholder="Describe el propósito formativo del proyecto, centrado en los aprendizajes de los alumnos..."
+              rows={4}
+              className="glass-input w-full"
+            />
+          </div>
+
+          {/* Instrumento evaluación */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+              Instrumento de Evaluación
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {catalogo.catalogosOperativos.instrumentosEvaluacion.map((instr) => {
+                const sel = instrSeleccionados.includes(instr);
+                return (
+                  <button
+                    key={instr}
+                    onClick={() => toggleMulti(instr, instrSeleccionados, setInstrSeleccionados)}
+                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                      sel
+                        ? "bg-[var(--accent-success)]/20 border-[var(--accent-success)]/40 text-[var(--accent-success)]"
+                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-success)]/30"
+                    }`}
+                  >
+                    {sel && <Check size={12} className="inline mr-1.5" />}
+                    {instr}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ajustes razonables */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+              Ajustes Razonables
+            </h2>
+            <div className="space-y-2">
+              {catalogo.catalogosOperativos.ajustesRazonables.map((aj) => {
+                const sel = ajustesSeleccionados.includes(aj);
+                return (
+                  <button
+                    key={aj}
+                    onClick={() => toggleMulti(aj, ajustesSeleccionados, setAjustesSeleccionados)}
+                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                      sel
+                        ? "bg-[var(--accent-warning)]/15 border-[var(--accent-warning)]/40 text-[var(--text-primary)]"
+                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-warning)]/30"
+                    }`}
+                  >
+                    {sel && <Check size={14} className="inline mr-2 text-[var(--accent-warning)]" />}
+                    {aj}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Actividades PMC */}
+          <div className="glass-panel p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+              Actividades PMC
+            </h2>
+            <div className="space-y-2">
+              {catalogo.catalogosOperativos.actividadesPmc.map((pmc) => {
+                const sel = pmcSeleccionados.includes(pmc);
+                return (
+                  <button
+                    key={pmc}
+                    onClick={() => toggleMulti(pmc, pmcSeleccionados, setPmcSeleccionados)}
+                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                      sel
+                        ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
+                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
+                    }`}
+                  >
+                    {sel && <Check size={14} className="inline mr-2 text-[var(--accent-primary)]" />}
+                    {pmc}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── STEP 3: Revisar y Generar ──── */}
+      {step === 3 && catalogo && (
+        <div className="space-y-6">
+          <div className="glass-panel p-6">
+            <h2 className="text-xl font-bold gradient-text mb-6">Resumen de la Planeación</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Identificación */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">Identificación</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-24 shrink-0">Periodo:</span>
+                    <span className="text-[var(--text-primary)]">{periodoProyecto || "—"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-24 shrink-0">Metodología:</span>
+                    <span className="text-[var(--text-primary)]">{PlanningModalidadLabels[modalidad]}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-24 shrink-0">Modo:</span>
+                    <span className="text-[var(--text-primary)]">{isStandalone ? "Independiente" : "Integrado con grupo"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Catálogos */}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">Catálogos</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-28 shrink-0">Instrumento:</span>
+                    <span className="text-[var(--text-primary)]">{instrSeleccionados.length > 0 ? instrSeleccionados.join(", ") : "—"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-28 shrink-0">Ajustes:</span>
+                    <span className="text-[var(--text-primary)]">{ajustesSeleccionados.length > 0 ? `${ajustesSeleccionados.length} seleccionado(s)` : "—"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)] w-28 shrink-0">PMC:</span>
+                    <span className="text-[var(--text-primary)]">{pmcSeleccionados.length > 0 ? `${pmcSeleccionados.length} seleccionado(s)` : "—"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fundamentación */}
+            <div className="mt-6">
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
+                Fundamentación Curricular ({camposSeleccionados.length} campo{camposSeleccionados.length !== 1 ? "s" : ""})
+              </p>
+              <div className="space-y-2">
+                {camposSeleccionados.map((sel, idx) => {
+                  const badge = CAMPO_BADGE[sel.campoFormativoId] || "";
+                  return (
+                    <div key={idx} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-glass)]">
+                      <span className={`px-2 py-0.5 rounded-full text-xs border shrink-0 ${badge}`}>
+                        {getCampoInfo(sel.campoFormativoId)?.nombre}
+                      </span>
+                      <span className="text-sm text-[var(--text-secondary)] line-clamp-2">
+                        {getContenidoName(sel.campoFormativoId, sel.contenidoId)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Ejes */}
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Ejes Articuladores</p>
+              <div className="flex flex-wrap gap-2">
+                {ejesSeleccionados.map((eje) => (
+                  <span key={eje} className="px-3 py-1 rounded-full text-xs border border-[var(--accent-secondary)]/30 text-[var(--accent-secondary)] bg-[var(--accent-secondary)]/10">
+                    {eje}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Problemática y Propósito */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Problemática</p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  {problematica === "__custom__" ? problematicaCustom : problematica}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">Propósito</p>
+                <p className="text-sm text-[var(--text-secondary)]">{proposito}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20">
+            <Info size={18} className="text-[var(--accent-primary)] shrink-0 mt-0.5" />
+            <p className="text-sm text-[var(--text-secondary)]">
+              La IA generará la <strong className="text-[var(--text-primary)]">Matriz Didáctica completa</strong> con las actividades, campo y PDA, organización, recursos y evaluación formativa para cada momento de la metodología <strong className="text-[var(--text-primary)]">{PlanningModalidadLabels[modalidad]}</strong>.
+              Los PDAs serán copiados exactamente del catálogo oficial de la SEP.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between mt-8">
+        <button
+          onClick={() => setStep((s) => s - 1)}
+          disabled={step === 0}
+          className="glass-button-secondary flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft size={16} />
+          Anterior
+        </button>
+
+        {step < 3 ? (
+          <button
+            onClick={() => setStep((s) => s + 1)}
+            disabled={!canProceed()}
+            className="glass-button flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Siguiente
+            <ChevronRight size={16} />
+          </button>
+        ) : (
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="glass-button flex items-center gap-2 disabled:opacity-60"
+          >
+            {generating ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Generando con IA...
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} />
+                Generar Planeación
+              </>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

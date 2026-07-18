@@ -14,16 +14,6 @@ export enum CampoFormativo {
   HUMANO_COMUNITARIO = "HUMANO_COMUNITARIO",
 }
 
-export enum EjeArticulador {
-  PENSAMIENTO_CRITICO = "PENSAMIENTO_CRITICO",
-  VIDA_SALUDABLE = "VIDA_SALUDABLE",
-  INCLUSION = "INCLUSION",
-  INTERCULTURALIDAD_CRITICA = "INTERCULTURALIDAD_CRITICA",
-  IGUALDAD_GENERO = "IGUALDAD_GENERO",
-  ARTE_CULTURA = "ARTE_CULTURA",
-  APROPIACION_TECNOLOGIA = "APROPIACION_TECNOLOGIA",
-}
-
 export enum NivelEducativo {
   PREESCOLAR = "PREESCOLAR",
   PRIMARIA = "PRIMARIA",
@@ -37,64 +27,134 @@ export enum PlanningStatus {
   REJECTED = "REJECTED",
 }
 
-export interface PlanningFase {
-  orden: number;
+// ─── Catálogo del servidor ────────────────────────────────────────────────────
+
+export interface CatalogoContenido {
+  id: string;       // e.g. "L_01"
+  nombre: string;   // nombre_contenido
+}
+
+export interface CatalogoCampoFormativo {
+  id: string;          // e.g. "LENGUAJES"
+  nombre: string;      // "Lenguajes"
+  finalidad: string;
+  contenidos: CatalogoContenido[];
+}
+
+export interface CatalogoMetodologia {
+  id: string;           // PlanningModalidad enum
   nombre: string;
-  actividades: string;
+  siglas: string;
+  definicion: string;
+  fases: string[];      // e.g. ["1. Punto de partida", "2. Planeación", ...]
 }
 
-export interface PlanningRecursos {
-  espacios?: string;
-  tiempos?: string;
-  materiales?: string;
+export interface CatalogosOperativos {
+  problematicas: string[];
+  ajustesRazonables: string[];
+  actividadesPmc: string[];
+  instrumentosEvaluacion: string[];
 }
 
-export interface SugerenciaIA {
-  hayDiscrepancia: boolean;
-  modalidadSugerida: string | null;
-  campoFormativoSugerido: string | null;
-  ejesArticuladoresSugeridos: string[] | null;
-  justificacion: string | null;
+export interface PlanningCatalogo {
+  camposFormativos: CatalogoCampoFormativo[];
+  ejesArticuladores: string[];
+  metodologias: CatalogoMetodologia[];
+  catalogosOperativos: CatalogosOperativos;
+}
+
+// ─── DTOs de generación ───────────────────────────────────────────────────────
+
+export interface CampoSeleccionado {
+  campoFormativoId: string;  // e.g. "LENGUAJES"
+  contenidoId: string;       // e.g. "L_01"
 }
 
 export interface GeneratePlanningDto {
-  contextoInicial: string;
-  modalidad?: PlanningModalidad;
-  campoFormativo?: CampoFormativo;
-  ejesArticuladores?: EjeArticulador[];
+  // Curricular (new)
+  camposSeleccionados: CampoSeleccionado[];
+  modalidad: PlanningModalidad;
+  ejesArticuladores?: string[];
+  // Mode
   groupId?: string;
   subjectId?: string;
   standaloneLevel?: NivelEducativo;
   standaloneGradeOrder?: number;
+  // Admin
+  targetTeacherProfileId?: string;
+  // Sara format
+  periodoProyecto?: string;
+  problematica: string;
+  proposito: string;
+  instrumentoEvaluacion?: string[];
+  ajustesRazonables?: string[];
+  actividadesPmc?: string[];
+  contextoInicial?: string;
 }
 
 export interface UpdatePlanningDto {
   title?: string;
-  contenidos?: string;
-  pda?: string;
-  relevanciaSocial?: string;
-  produccionSugerida?: string;
-  fases?: PlanningFase[];
-  recursos?: PlanningRecursos;
-  campoFormativo?: CampoFormativo;
-  ejesArticuladores?: EjeArticulador[];
+  periodoProyecto?: string;
+  problematica?: string;
+  proposito?: string;
+  instrumentoEvaluacion?: string[];
+  ajustesRazonables?: string[];
+  actividadesPmc?: string[];
+  fundamentacion?: FundamentacionItem[];
+  matrizDidactica?: MatrizMomento[];
+  ejesArticuladores?: string[];
   status?: PlanningStatus;
 }
+
+// ─── Formato Sara — Fundamentación y Matriz ───────────────────────────────────
+
+export interface FundamentacionItem {
+  campoFormativo: string;      // enum id e.g. "LENGUAJES"
+  nombreCampo: string;         // "Lenguajes"
+  contenido: string;           // nombre_contenido exacto
+  pda: string;                 // PDA exacto del grado
+}
+
+export interface MatrizFila {
+  actividades: string;
+  campo_pda: string;
+  organizacion: string;
+  recursos: string;
+  evaluacion: string;
+}
+
+export interface MatrizMomento {
+  momento: string;             // e.g. "1. Punto de partida"
+  filas: MatrizFila[];
+}
+
+// ─── Modelo Planning completo ─────────────────────────────────────────────────
 
 export interface Planning {
   id: string;
   title: string;
   modalidad: PlanningModalidad;
   campoFormativo: CampoFormativo;
-  ejesArticuladores: EjeArticulador[];
+  ejesArticuladores: string[];
   contextoInicial: string;
+  // Legacy fields
   contenidos?: string | null;
   pda?: string | null;
   relevanciaSocial?: string | null;
   produccionSugerida?: string | null;
-  fases: PlanningFase[];
-  recursos?: PlanningRecursos | null;
-  content: string;
+  fases?: any[] | null;
+  recursos?: any | null;
+  content?: string | null;
+  // New Sara format fields
+  periodoProyecto?: string | null;
+  problematica?: string | null;
+  proposito?: string | null;
+  instrumentoEvaluacion?: string[];
+  ajustesRazonables?: string[];
+  actividadesPmc?: string[];
+  fundamentacion?: FundamentacionItem[] | null;
+  matrizDidactica?: MatrizMomento[] | null;
+  // Meta
   weekStart?: string | null;
   status: PlanningStatus;
   createdAt: string;
@@ -102,24 +162,26 @@ export interface Planning {
   teacherProfileId: string;
   groupId?: string | null;
   subjectId?: string | null;
+  isStandalone?: boolean;
+  standaloneLevel?: NivelEducativo | null;
+  standaloneGradeOrder?: number | null;
   group?: {
     id: string;
     name: string;
     section?: string | null;
-    grade: {
-      name: string;
-    };
+    grade: { name: string; order: number; level: NivelEducativo };
   } | null;
   subject?: {
     id: string;
     name: string;
     code: string;
   } | null;
-  standaloneLevel?: NivelEducativo | null;
-  standaloneGradeOrder?: number | null;
+  teacherProfile?: {
+    id: string;
+    user: { firstName: string; lastName: string };
+  } | null;
 }
 
 export interface GeneratePlanningResponse {
   planning: Planning;
-  sugerenciaIA: SugerenciaIA | null;
 }

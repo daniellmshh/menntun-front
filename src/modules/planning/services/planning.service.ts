@@ -4,8 +4,14 @@ import {
   GeneratePlanningDto,
   GeneratePlanningResponse,
   Planning,
+  PlanningCatalogo,
   UpdatePlanningDto,
 } from "../types";
+
+export const getPlanningCatalogo = async (): Promise<ApiResponse<PlanningCatalogo>> => {
+  const response = await api.get<ApiResponse<PlanningCatalogo>>("/planning/catalogo");
+  return response.data;
+};
 
 export const generatePlanning = async (
   dto: GeneratePlanningDto
