@@ -49,3 +49,10 @@ export const deletePlanning = async (
   const response = await api.delete<ApiResponse<void>>(`/planning/${id}`);
   return response.data;
 };
+
+export const exportPlanningHtml = async (id: string): Promise<string> => {
+  const response = await api.get(`/planning/${id}/export/html`, {
+    responseType: "text",
+  });
+  return response.data;
+};

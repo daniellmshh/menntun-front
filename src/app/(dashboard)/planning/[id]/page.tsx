@@ -28,6 +28,7 @@ import {
   getPlanningById,
   updatePlanning,
   deletePlanning,
+  exportPlanningHtml,
 } from "@/modules/planning/services/planning.service";
 import {
   Planning,
@@ -138,8 +139,32 @@ export default function PlanningDetailPage() {
       if (res.data) { setPlanning(res.data); setMessage("Planeación enviada para revisión."); }
     } catch {
       setError("Error al enviar la planeación.");
-    } finally {
       setSaving(false);
+    }
+  };
+
+  const [exporting, setExporting] = useState(false);
+  const handleExportHtml = async () => {
+    setExporting(true);
+    try {
+      const htmlStr = await exportPlanningHtml(id);
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        printWindow.document.write(htmlStr);
+        printWindow.document.close();
+        
+        // Wait for fonts and content to load before printing
+        printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+      } else {
+        setError("Por favor permite las ventanas emergentes (pop-ups) para imprimir.");
+      }
+    } catch {
+      setError("Error al exportar la planeación.");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -250,11 +275,12 @@ export default function PlanningDetailPage() {
         <div className="flex items-center gap-3 print:hidden">
           <StatusBadge status={planning.status} />
           <button
-            onClick={() => window.print()}
+            onClick={handleExportHtml}
+            disabled={exporting}
             className="glass-button-secondary flex items-center gap-2 text-sm"
           >
             <Printer size={16} />
-            Exportar PDF
+            {exporting ? "Generando..." : "Exportar / Imprimir"}
           </button>
           {planning.status === PlanningStatus.DRAFT && (
             <button
