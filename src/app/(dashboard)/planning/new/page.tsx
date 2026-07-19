@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -16,11 +16,10 @@ import {
   Users,
   Check,
   AlertCircle,
-  Loader2,
   Info,
 } from "lucide-react";
 import api from "@/lib/api/axios";
-import { generatePlanning, getPlanningCatalogo } from "@/modules/planning/services/planning.service";
+import { getPlanningCatalogo } from "@/modules/planning/services/planning.service";
 import {
   PlanningModalidad,
   NivelEducativo,
@@ -70,6 +69,10 @@ export default function NewPlanningPage() {
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Streaming state
+  const [streamContent, setStreamContent] = useState("");
+  const [streamStatus, setStreamStatus] = useState("");
+  const [streamProgress, setStreamProgress] = useState(0);
 
   // Catalog data from server
   const [catalogo, setCatalogo] = useState<PlanningCatalogo | null>(null);
@@ -193,6 +196,10 @@ export default function NewPlanningPage() {
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
+    setStreamContent("");
+    setStreamStatus("Preparando tu planeación...");
+    setStreamProgress(5);
+
     try {
       const prob = problematica === "__custom__" ? problematicaCustom : problematica;
       const dto = {
@@ -210,21 +217,169 @@ export default function NewPlanningPage() {
         ajustesRazonables: ajustesSeleccionados,
         actividadesPmc: pmcSeleccionados,
       };
-      const res = await generatePlanning(dto);
-      if (res.data?.planning?.id) {
-        router.push(`/planning/${res.data.planning.id}`);
+
+      // Obtener el token JWT de Supabase
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Sesión expirada. Por favor recarga.");
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
+      const response = await fetch(`${backendUrl}/api/planning/generate/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(dto),
+      });
+
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData?.message || "Error al conectar con el servidor.");
       }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let tokenCount = 0;
+
+      const STATUS_MESSAGES = [
+        "Analizando fundamentación curricular SEP...",
+        "Diseñando la matriz didáctica...",
+        "Integrando campos formativos y PDAs...",
+        "Construyendo actividades por momento...",
+        "Incorporando ajustes y evaluación formativa...",
+        "Revisando coherencia pedagógica NEM...",
+      ];
+      let statusIdx = 0;
+      const statusInterval = setInterval(() => {
+        statusIdx = (statusIdx + 1) % STATUS_MESSAGES.length;
+        setStreamStatus(STATUS_MESSAGES[statusIdx]);
+      }, 4000);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            if (event.type === "token") {
+              tokenCount++;
+              setStreamContent((prev) => prev + event.content);
+              // Progreso simulado: primeros tokens avanzan rápido, luego desacelera
+              setStreamProgress((p) =>
+                p < 85 ? Math.min(85, p + (tokenCount < 100 ? 0.8 : 0.15)) : p
+              );
+            } else if (event.type === "status") {
+              setStreamStatus(event.message);
+            } else if (event.type === "done") {
+              clearInterval(statusInterval);
+              setStreamProgress(100);
+              setStreamStatus("¡Planeación generada exitosamente!");
+              setTimeout(() => router.push(`/planning/${event.planningId}`), 800);
+            } else if (event.type === "error") {
+              clearInterval(statusInterval);
+              throw new Error(event.message);
+            }
+          } catch (parseErr: any) {
+            // Ignorar líneas que no sean JSON válido (solo lanzar si es evento de error)
+            if (parseErr?.message && !parseErr.message.includes("JSON")) {
+              throw parseErr;
+            }
+          }
+        }
+      }
+      clearInterval(statusInterval);
     } catch (err: any) {
-      const msg = err?.response?.data?.message;
-      setError(Array.isArray(msg) ? msg.join(", ") : msg || "Error al generar la planeación.");
-    } finally {
+      setError(err?.message || "Error al generar la planeación.");
       setGenerating(false);
+      setStreamContent("");
+      setStreamProgress(0);
     }
   };
 
   // ─── Rendering ────────────────────────────────────────────────────────────
 
   if (loadingCatalog) return <Loader />;
+
+  // ─── Overlay de generación (SSE streaming) ─────────────────────────────────
+  if (generating) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "hsl(240, 16%, 4%)" }}>
+        {/* Fondo animado */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse" style={{ background: "hsl(263, 90%, 60%)" }} />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-10 animate-pulse" style={{ background: "hsl(190, 95%, 50%)", animationDelay: "1s" }} />
+        </div>
+
+        <div className="relative z-10 w-full max-w-2xl mx-4">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 animate-pulse" style={{ background: "hsl(263, 90%, 60%, 0.2)", border: "1px solid hsl(263, 90%, 60%, 0.4)" }}>
+              <Sparkles size={28} style={{ color: "hsl(263, 90%, 60%)" }} />
+            </div>
+            <h2 className="text-2xl font-bold gradient-text mb-2">Generando tu planeación</h2>
+            <p className="text-sm" style={{ color: "hsl(240, 6%, 70%)" }}>
+              La IA está construyendo la Matriz Didáctica completa…
+            </p>
+          </div>
+
+          {/* Barra de progreso */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium" style={{ color: "hsl(240, 6%, 70%)" }}>{streamStatus}</span>
+              <span className="text-xs font-bold" style={{ color: "hsl(263, 90%, 70%)" }}>{Math.round(streamProgress)}%</span>
+            </div>
+            <div className="w-full h-2 rounded-full" style={{ background: "hsl(240, 16%, 14%)" }}>
+              <div
+                className="h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${streamProgress}%`,
+                  background: "linear-gradient(90deg, hsl(263, 90%, 60%), hsl(190, 95%, 50%))",
+                  boxShadow: streamProgress > 10 ? "0 0 12px hsl(263, 90%, 60%, 0.5)" : "none",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Preview del stream */}
+          <div
+            className="rounded-2xl p-4 font-mono text-xs leading-relaxed overflow-y-auto"
+            style={{
+              background: "hsl(240, 16%, 8%)",
+              border: "1px solid hsl(240, 16%, 18%)",
+              height: "260px",
+              color: "hsl(142, 72%, 65%)",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+            }}
+          >
+            {streamContent || <span style={{ color: "hsl(240, 6%, 50%)" }}>Esperando respuesta de la IA…</span>}
+            {streamContent && (
+              <span
+                className="inline-block w-2 h-4 ml-0.5 align-middle animate-pulse"
+                style={{ background: "hsl(142, 72%, 65%)", borderRadius: "2px" }}
+              />
+            )}
+          </div>
+
+          {/* Nota inferior */}
+          <p className="text-center text-xs mt-4" style={{ color: "hsl(240, 6%, 50%)" }}>
+            Esto puede tomar entre 20 y 40 segundos &mdash; no cierres esta ventana
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">
@@ -828,17 +983,8 @@ export default function NewPlanningPage() {
             disabled={generating}
             className="glass-button flex items-center gap-2 disabled:opacity-60"
           >
-            {generating ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Generando con IA...
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} />
-                Generar Planeación
-              </>
-            )}
+            <Sparkles size={16} />
+            Generar Planeación
           </button>
         )}
       </div>

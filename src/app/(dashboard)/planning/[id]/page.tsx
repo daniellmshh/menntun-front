@@ -160,6 +160,70 @@ export default function PlanningDetailPage() {
     ? `${planning.standaloneLevel} ${planning.standaloneGradeOrder}°`
     : "—";
 
+  // Helpers for text rendering
+  const renderActividades = (text: string) => {
+    if (!text) return null;
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    return (
+      <div className="space-y-1.5">
+        {lines.map((line, i) => {
+          if (line.startsWith('-')) {
+            return (
+              <div key={i} className="flex items-start gap-1.5">
+                <span className="text-[var(--text-muted)] print:text-gray-500 mt-0.5">•</span>
+                <span>{line.replace(/^- /, '')}</span>
+              </div>
+            );
+          }
+          return <p key={i}>{line}</p>;
+        })}
+      </div>
+    );
+  };
+
+  const renderCampoPda = (text: string) => {
+    if (!text) return null;
+    // Highlight "CAMPO: X"
+    const blocks = text.split('\n\n').filter(b => b.trim());
+    return (
+      <div className="space-y-4">
+        {blocks.map((block, i) => {
+          const lines = block.split('\n').filter(l => l.trim());
+          return (
+            <div key={i} className="space-y-1.5">
+              {lines.map((line, j) => {
+                if (line.startsWith('CAMPO:')) {
+                  const campoName = line.replace('CAMPO:', '').trim();
+                  // Try to map to our known fields for colors, or just a default pinkish highlight
+                  let bgClass = "bg-pink-100 text-pink-800 border-pink-200 print:bg-pink-100 print:text-pink-800";
+                  if (campoName.toLowerCase().includes("científico")) {
+                    bgClass = "bg-green-100 text-green-800 border-green-200 print:bg-green-100 print:text-green-800";
+                  } else if (campoName.toLowerCase().includes("ética") || campoName.toLowerCase().includes("naturaleza")) {
+                    bgClass = "bg-yellow-100 text-yellow-800 border-yellow-200 print:bg-yellow-100 print:text-yellow-800";
+                  } else if (campoName.toLowerCase().includes("lenguaje")) {
+                    bgClass = "bg-blue-100 text-blue-800 border-blue-200 print:bg-blue-100 print:text-blue-800";
+                  }
+                  return (
+                    <div key={j} className="mb-2">
+                      <span className={`px-2 py-0.5 text-[11px] font-bold rounded border ${bgClass}`}>
+                        CAMPO: {campoName}
+                      </span>
+                    </div>
+                  );
+                } else if (line.startsWith('PDA:')) {
+                  return <p key={j} className="italic text-[11px] text-[var(--accent-primary)] print:text-gray-600">{line}</p>;
+                } else if (line.startsWith('CONTENIDO:')) {
+                  return <p key={j} className="font-medium text-[11px] text-[var(--text-primary)] print:text-gray-800">{line}</p>;
+                }
+                return <p key={j} className="text-[11px]">{line}</p>;
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="animate-fade-in">
       {/* Header */}
@@ -391,19 +455,19 @@ export default function PlanningDetailPage() {
               {/* Table — always visible in print */}
               <div className={`${collapsedMomentos[mIdx] ? "hidden print:block" : ""}`}>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-xs">
+                  <table className="w-full border-collapse text-xs table-fixed">
                     <thead>
                       <tr className="bg-[var(--bg-surface)]/80 print:bg-gray-100">
                         {[
-                          { label: "ACTIVIDADES", width: "w-[30%]" },
-                          { label: "CAMPO FORMATIVO Y PDA", width: "w-[22%]" },
+                          { label: "ACTIVIDADES SUGERIDAS (Inicio, Desarrollo y Cierre)", width: "w-[35%]" },
+                          { label: "CAMPO Y PDA QUE SE ABORDA", width: "w-[20%]" },
                           { label: "ORGANIZACIÓN", width: "w-[12%]" },
-                          { label: "RECURSOS Y MATERIALES", width: "w-[18%]" },
-                          { label: "EVALUACIÓN FORMATIVA", width: "w-[18%]" },
+                          { label: "RECURSOS Y MATERIALES", width: "w-[15%]" },
+                          { label: "EVALUACIÓN FORMATIVA (Indicadores)", width: "w-[18%]" },
                         ].map((col) => (
                           <th
                             key={col.label}
-                            className={`${col.width} text-left py-2 px-3 text-[var(--text-muted)] font-bold uppercase tracking-wider border-b border-[var(--border-glass)] print:text-gray-600 print:border-gray-300`}
+                            className={`${col.width} text-left py-2 px-3 text-[var(--text-muted)] font-bold uppercase tracking-wider border-b border-[var(--border-glass)] print:text-gray-600 print:border-gray-300 align-top`}
                           >
                             {col.label}
                           </th>
@@ -416,21 +480,21 @@ export default function PlanningDetailPage() {
                           key={fIdx}
                           className="border-b border-[var(--border-glass)]/40 hover:bg-[var(--bg-panel)] transition-colors align-top print:border-gray-200"
                         >
-                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed whitespace-pre-wrap">
-                            {fila.actividades}
+                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
+                            {renderActividades(fila.actividades)}
                           </td>
                           <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed">
-                            <span className="whitespace-pre-wrap italic text-xs">{fila.campo_pda}</span>
+                            {renderCampoPda(fila.campo_pda)}
                           </td>
-                          <td className="py-3 px-3 text-center">
-                            <span className="px-2 py-1 rounded-full text-xs bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-secondary)] print:border-gray-300 print:text-gray-700">
+                          <td className="py-3 px-3 text-center align-top">
+                            <span className="px-2 py-1 rounded-full text-[10px] bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-primary)] print:border-gray-300 print:text-gray-700">
                               {fila.organizacion}
                             </span>
                           </td>
-                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-xs">
-                            {fila.recursos}
+                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
+                            <div className="whitespace-pre-wrap">{fila.recursos}</div>
                           </td>
-                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-xs">
+                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
                             {fila.evaluacion}
                           </td>
                         </tr>
