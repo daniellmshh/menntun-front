@@ -32,6 +32,7 @@ export enum PlanningStatus {
 export interface CatalogoContenido {
   id: string;       // e.g. "L_01"
   nombre: string;   // nombre_contenido
+  pda?: Record<string, string>; // { grado_1: "...", grado_2: "..." }
 }
 
 export interface CatalogoCampoFormativo {
@@ -68,6 +69,7 @@ export interface PlanningCatalogo {
 export interface CampoSeleccionado {
   campoFormativoId: string;  // e.g. "LENGUAJES"
   contenidoId: string;       // e.g. "L_01"
+  pdaLiteral: string;        // El texto exacto del PDA elegido por la maestra
 }
 
 export interface GeneratePlanningDto {

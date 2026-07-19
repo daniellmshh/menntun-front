@@ -59,6 +59,16 @@ const MOMENTO_COLORS = [
   "border-l-sky-500",
 ];
 
+const EJES_LABELS: Record<string, string> = {
+  INCLUSION: "Inclusión",
+  PENSAMIENTO_CRITICO: "Pensamiento Crítico",
+  INTERCULTURALIDAD_CRITICA: "Interculturalidad Crítica",
+  IGUALDAD_GENERO: "Igualdad de Género",
+  VIDA_SALUDABLE: "Vida Saludable",
+  APROPIACION_TECNOLOGIA: "Apropiación de las culturas a través de la lectura y la escritura",
+  ARTE_CULTURA: "Artes y experiencias estéticas",
+};
+
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 const StatusBadge = ({ status }: { status: PlanningStatus }) => {
@@ -383,7 +393,7 @@ export default function PlanningDetailPage() {
                     key={eje}
                     className="px-3 py-1 rounded-full text-xs border border-[var(--accent-secondary)]/30 text-[var(--accent-secondary)] bg-[var(--accent-secondary)]/10 print:border-gray-400 print:bg-gray-100 print:text-gray-800 print:rounded"
                   >
-                    {eje}
+                    {EJES_LABELS[eje] || eje}
                   </span>
                 ))}
               </div>

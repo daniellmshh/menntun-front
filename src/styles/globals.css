@@ -245,7 +245,7 @@
 
   .glass-button {
     background: var(--accent-primary);
-    color: var(--text-primary);
+    color: #ffffff;
     border: none;
     border-radius: var(--radius-md);
     padding: 12px 24px;

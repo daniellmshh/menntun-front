@@ -96,6 +96,7 @@ export default function NewPlanningPage() {
   // Temp UI state for adding a campo+contenido
   const [addingCampoId, setAddingCampoId] = useState<string>("");
   const [addingContenidoId, setAddingContenidoId] = useState<string>("");
+  const [addingPdaLiteral, setAddingPdaLiteral] = useState<string>("");
 
   // ─── STEP 2: Catálogos Sara ────────────────────────────────────────────────
   const [problematica, setProblematica] = useState("");
@@ -137,18 +138,19 @@ export default function NewPlanningPage() {
   // ─── Campo+contenido helpers ───────────────────────────────────────────────
 
   const handleAddCampo = () => {
-    if (!addingCampoId || !addingContenidoId) return;
+    if (!addingCampoId || !addingContenidoId || !addingPdaLiteral) return;
     const exists = camposSeleccionados.some(
-      (c) => c.campoFormativoId === addingCampoId && c.contenidoId === addingContenidoId
+      (c) => c.campoFormativoId === addingCampoId && c.contenidoId === addingContenidoId && c.pdaLiteral === addingPdaLiteral
     );
     if (!exists) {
       setCamposSeleccionados((prev) => [
         ...prev,
-        { campoFormativoId: addingCampoId, contenidoId: addingContenidoId },
+        { campoFormativoId: addingCampoId, contenidoId: addingContenidoId, pdaLiteral: addingPdaLiteral },
       ]);
     }
     setAddingCampoId("");
     setAddingContenidoId("");
+    setAddingPdaLiteral("");
   };
 
   const handleRemoveCampo = (idx: number) => {
@@ -725,44 +727,83 @@ export default function NewPlanningPage() {
             </p>
 
             {/* Add row */}
-            <div className="flex flex-col sm:flex-row gap-3 mb-5">
-              <select
-                value={addingCampoId}
-                onChange={(e) => { setAddingCampoId(e.target.value); setAddingContenidoId(""); }}
-                className="glass-input flex-1"
-              >
-                <option value="">— Seleccionar Campo Formativo —</option>
-                {catalogo.camposFormativos.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-              </select>
-              <select
-                value={addingContenidoId}
-                onChange={(e) => setAddingContenidoId(e.target.value)}
-                className="glass-input flex-1"
-                disabled={!addingCampoId}
-              >
-                <option value="">— Seleccionar Contenido —</option>
-                {catalogo.camposFormativos
-                  .find((c) => c.id === addingCampoId)
-                  ?.contenidos.map((ct) => (
-                    <option key={ct.id} value={ct.id}>{ct.nombre}</option>
+            <div className="flex flex-col gap-3 mb-5">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={addingCampoId}
+                  onChange={(e) => { setAddingCampoId(e.target.value); setAddingContenidoId(""); setAddingPdaLiteral(""); }}
+                  className="glass-input flex-1"
+                >
+                  <option value="">— Seleccionar Campo Formativo —</option>
+                  {catalogo.camposFormativos.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
-              </select>
-              <button
-                onClick={handleAddCampo}
-                disabled={!addingCampoId || !addingContenidoId}
-                className="glass-button px-4 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Plus size={16} />
-                Agregar
-              </button>
+                </select>
+                <select
+                  value={addingContenidoId}
+                  onChange={(e) => { setAddingContenidoId(e.target.value); setAddingPdaLiteral(""); }}
+                  className="glass-input flex-1"
+                  disabled={!addingCampoId}
+                >
+                  <option value="">— Seleccionar Contenido —</option>
+                  {catalogo.camposFormativos
+                    .find((c) => c.id === addingCampoId)
+                    ?.contenidos.map((ct) => (
+                      <option key={ct.id} value={ct.id}>{ct.nombre}</option>
+                    ))}
+                </select>
+              </div>
+
+              {addingContenidoId && (
+                <div className="p-4 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-surface)]">
+                  <p className="text-sm font-semibold mb-3 text-[var(--text-primary)]">Selecciona el PDA que deseas trabajar:</p>
+                  <div className="space-y-2">
+                    {(() => {
+                      const currentGradeOrder = isStandalone
+                        ? standaloneGradeOrder
+                        : groups.find((g) => g.id === selectedGroupId)?.grade?.order || 1;
+                      const pdaKey = `grado_${currentGradeOrder}`;
+                      const pdaObj = catalogo.camposFormativos
+                        .find((c) => c.id === addingCampoId)
+                        ?.contenidos.find((ct) => ct.id === addingContenidoId)?.pda;
+                      
+                      const pdaText = pdaObj?.[pdaKey] || pdaObj?.["grado_1"] || "";
+
+                      if (!pdaText) return <p className="text-sm text-[var(--text-muted)]">No hay PDA disponible para este grado.</p>;
+
+                      return (
+                        <label className="flex items-start gap-3 cursor-pointer p-2 rounded hover:bg-[var(--bg-panel)] transition-colors">
+                          <input 
+                            type="radio" 
+                            name="pda_selection"
+                            className="mt-1"
+                            checked={addingPdaLiteral === pdaText}
+                            onChange={() => setAddingPdaLiteral(pdaText)}
+                          />
+                          <span className="text-sm text-[var(--text-secondary)] italic leading-relaxed">{pdaText}</span>
+                        </label>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddCampo}
+                  disabled={!addingCampoId || !addingContenidoId || !addingPdaLiteral}
+                  className="glass-button px-4 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Plus size={16} />
+                  Agregar
+                </button>
+              </div>
             </div>
 
             {/* Selected campos */}
             {camposSeleccionados.length === 0 ? (
               <div className="text-center py-8 text-[var(--text-muted)] text-sm border border-dashed border-[var(--border-glass)] rounded-xl">
-                Agrega al menos un Campo Formativo + Contenido
+                Agrega al menos un Campo Formativo + Contenido + PDA
               </div>
             ) : (
               <div className="space-y-3">
@@ -779,10 +820,12 @@ export default function NewPlanningPage() {
                         <p className="text-xs font-bold uppercase tracking-wider mb-1 opacity-80">
                           {campo?.nombre}
                         </p>
-                        <p className="text-sm text-[var(--text-primary)] leading-relaxed">
+                        <p className="text-sm font-semibold text-[var(--text-primary)] leading-relaxed mb-1">
                           {contenido?.nombre}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-1">ID: {sel.contenidoId}</p>
+                        <p className="text-xs italic text-[var(--text-primary)] opacity-90 leading-relaxed">
+                          PDA: {sel.pdaLiteral}
+                        </p>
                       </div>
                       <button
                         onClick={() => handleRemoveCampo(idx)}
