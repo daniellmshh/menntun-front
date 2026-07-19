@@ -148,16 +148,27 @@ export default function PlanningDetailPage() {
     setExporting(true);
     try {
       const htmlStr = await exportPlanningHtml(id);
-      const blob = new Blob([htmlStr], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const printWindow = window.open(url, "_blank");
       
-      if (printWindow) {
-        // Revoke the object URL after a short delay to free memory
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-      } else {
-        setError("Por favor permite las ventanas emergentes (pop-ups) para imprimir.");
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "absolute";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "none";
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow?.document;
+      if (doc) {
+        doc.open();
+        doc.write(htmlStr);
+        doc.close();
       }
+
+      // Cleanup iframe after a while
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 60000);
     } catch {
       setError("Error al exportar la planeación.");
     } finally {
