@@ -313,22 +313,64 @@ export default function NewPlanningPage() {
 
   // ─── Overlay de generación (SSE streaming) ─────────────────────────────────
   if (generating) {
+    // Extrae fragmentos legibles del JSON parcial acumulado
+    const extractPreview = (raw: string) => {
+      const items: { tipo: "titulo" | "momento" | "actividad"; texto: string }[] = [];
+
+      // Título
+      const titleMatch = raw.match(/"title"\s*:\s*"([^"]{3,})"/);
+      if (titleMatch) items.push({ tipo: "titulo", texto: titleMatch[1] });
+
+      // Momentos
+      const momentoMatches = [...raw.matchAll(/"momento"\s*:\s*"([^"]{3,})"/g)];
+      momentoMatches.forEach((m) => items.push({ tipo: "momento", texto: m[1] }));
+
+      // Actividades (primera línea de cada actividad)
+      const actMatches = [...raw.matchAll(/"actividades"\s*:\s*"((?:[^"\\]|\\.)*)"/g)];
+      actMatches.forEach((m) => {
+        const firstLine = m[1]
+          .replace(/\\n/g, "\n")
+          .split("\n")
+          .find((l) => l.trim().length > 10);
+        if (firstLine) items.push({ tipo: "actividad", texto: firstLine.replace(/^-\s*/, "").trim() });
+      });
+
+      return items;
+    };
+
+    const previewItems = extractPreview(streamContent);
+
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "hsl(240, 16%, 4%)" }}>
-        {/* Fondo animado */}
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center"
+        style={{ background: "var(--bg-base)" }}
+      >
+        {/* Blobs de fondo — siempre sutiles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-10 animate-pulse" style={{ background: "hsl(263, 90%, 60%)" }} />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-10 animate-pulse" style={{ background: "hsl(190, 95%, 50%)", animationDelay: "1s" }} />
+          <div
+            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-[0.07] animate-pulse"
+            style={{ background: "var(--accent-primary)" }}
+          />
+          <div
+            className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-[0.07] animate-pulse"
+            style={{ background: "var(--accent-secondary)", animationDelay: "1s" }}
+          />
         </div>
 
         <div className="relative z-10 w-full max-w-2xl mx-4">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 animate-pulse" style={{ background: "hsl(263, 90%, 60%, 0.2)", border: "1px solid hsl(263, 90%, 60%, 0.4)" }}>
-              <Sparkles size={28} style={{ color: "hsl(263, 90%, 60%)" }} />
+            <div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 animate-pulse"
+              style={{
+                background: "color-mix(in srgb, var(--accent-primary) 15%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent)",
+              }}
+            >
+              <Sparkles size={28} style={{ color: "var(--accent-primary)" }} />
             </div>
             <h2 className="text-2xl font-bold gradient-text mb-2">Generando tu planeación</h2>
-            <p className="text-sm" style={{ color: "hsl(240, 6%, 70%)" }}>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               La IA está construyendo la Matriz Didáctica completa…
             </p>
           </div>
@@ -336,50 +378,128 @@ export default function NewPlanningPage() {
           {/* Barra de progreso */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium" style={{ color: "hsl(240, 6%, 70%)" }}>{streamStatus}</span>
-              <span className="text-xs font-bold" style={{ color: "hsl(263, 90%, 70%)" }}>{Math.round(streamProgress)}%</span>
+              <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+                {streamStatus}
+              </span>
+              <span className="text-xs font-bold" style={{ color: "var(--accent-primary-light)" }}>
+                {Math.round(streamProgress)}%
+              </span>
             </div>
-            <div className="w-full h-2 rounded-full" style={{ background: "hsl(240, 16%, 14%)" }}>
+            <div
+              className="w-full h-2 rounded-full"
+              style={{ background: "var(--border-glass)" }}
+            >
               <div
                 className="h-2 rounded-full transition-all duration-300"
                 style={{
                   width: `${streamProgress}%`,
-                  background: "linear-gradient(90deg, hsl(263, 90%, 60%), hsl(190, 95%, 50%))",
-                  boxShadow: streamProgress > 10 ? "0 0 12px hsl(263, 90%, 60%, 0.5)" : "none",
+                  background: "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))",
+                  boxShadow: streamProgress > 10 ? "var(--shadow-glow)" : "none",
                 }}
               />
             </div>
           </div>
 
-          {/* Preview del stream */}
+          {/* Preview humanizada */}
           <div
-            className="rounded-2xl p-4 font-mono text-xs leading-relaxed overflow-y-auto"
+            className="rounded-2xl overflow-hidden"
             style={{
-              background: "hsl(240, 16%, 8%)",
-              border: "1px solid hsl(240, 16%, 18%)",
-              height: "260px",
-              color: "hsl(142, 72%, 65%)",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-all",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border-glass)",
+              minHeight: "220px",
+              maxHeight: "260px",
+              overflowY: "auto",
             }}
           >
-            {streamContent || <span style={{ color: "hsl(240, 6%, 50%)" }}>Esperando respuesta de la IA…</span>}
-            {streamContent && (
-              <span
-                className="inline-block w-2 h-4 ml-0.5 align-middle animate-pulse"
-                style={{ background: "hsl(142, 72%, 65%)", borderRadius: "2px" }}
-              />
+            {previewItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full py-12 gap-3">
+                <div
+                  className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                  style={{ borderColor: "var(--accent-primary)", borderTopColor: "transparent" }}
+                />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                  Esperando respuesta de la IA…
+                </p>
+              </div>
+            ) : (
+              <div className="p-4 space-y-3">
+                {previewItems.map((item, i) => {
+                  if (item.tipo === "titulo") {
+                    return (
+                      <div key={i} className="flex items-start gap-3">
+                        <span className="text-lg leading-none mt-0.5">📋</span>
+                        <div>
+                          <p
+                            className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                            style={{ color: "var(--text-muted)" }}
+                          >
+                            Título del proyecto
+                          </p>
+                          <p
+                            className="text-sm font-semibold leading-snug"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {item.texto}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (item.tipo === "momento") {
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                        style={{
+                          background: "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
+                          border: "1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent)",
+                        }}
+                      >
+                        <span className="text-sm">🔷</span>
+                        <p
+                          className="text-xs font-semibold"
+                          style={{ color: "var(--accent-primary-light)" }}
+                        >
+                          {item.texto}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} className="flex items-start gap-2 pl-2">
+                      <span
+                        className="text-xs mt-1 shrink-0"
+                        style={{ color: "var(--accent-success)" }}
+                      >
+                        ✓
+                      </span>
+                      <p
+                        className="text-xs leading-relaxed line-clamp-2"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        {item.texto}
+                      </p>
+                    </div>
+                  );
+                })}
+                {/* Cursor parpadeante al final */}
+                <span
+                  className="inline-block w-2 h-3.5 align-middle animate-pulse rounded-sm"
+                  style={{ background: "var(--accent-primary)" }}
+                />
+              </div>
             )}
           </div>
 
           {/* Nota inferior */}
-          <p className="text-center text-xs mt-4" style={{ color: "hsl(240, 6%, 50%)" }}>
+          <p className="text-center text-xs mt-4" style={{ color: "var(--text-muted)" }}>
             Esto puede tomar entre 20 y 40 segundos &mdash; no cierres esta ventana
           </p>
         </div>
       </div>
     );
   }
+
 
   return (
     <div className="animate-fade-in">
