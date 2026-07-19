@@ -148,16 +148,13 @@ export default function PlanningDetailPage() {
     setExporting(true);
     try {
       const htmlStr = await exportPlanningHtml(id);
-      const printWindow = window.open("", "_blank");
+      const blob = new Blob([htmlStr], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, "_blank");
+      
       if (printWindow) {
-        printWindow.document.write(htmlStr);
-        printWindow.document.close();
-        
-        // Wait for fonts and content to load before printing
-        printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-        };
+        // Revoke the object URL after a short delay to free memory
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
       } else {
         setError("Por favor permite las ventanas emergentes (pop-ups) para imprimir.");
       }
