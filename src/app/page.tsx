@@ -119,7 +119,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-transparent to-transparent z-10 bottom-0 h-1/3" />
             <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] glass-panel aspect-[16/9] w-full">
                <Image 
-                  src="/images/imag1.jpg" 
+                  src="/images/hero-dashboard.jpg" 
                   alt="Menntun Dashboard" 
                   fill
                   className="object-cover object-top"
@@ -156,13 +156,13 @@ export default function LandingPage() {
                 </ul>
               </div>
               <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
-                 <Image src="/images/img3.jpg" alt="Planeaciones IA" fill className="object-cover object-left-top" unoptimized />
+                 <Image src="/images/ai-planning.jpg" alt="Planeaciones IA" fill className="object-cover object-left-top" unoptimized />
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="order-2 md:order-1 relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
-                <Image src="/images/img2.jpg" alt="Arquitectura Modular" fill className="object-cover object-left-top" unoptimized />
+                <Image src="/images/modular-architecture.jpg" alt="Arquitectura Modular" fill className="object-cover object-left-top" unoptimized />
               </div>
               <div className="space-y-6 order-1 md:order-2">
                 <div className="w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/15 flex items-center justify-center text-[var(--accent-secondary)]">
@@ -324,7 +324,7 @@ export default function LandingPage() {
 
               {/* Decorative Image */}
               <div className="relative w-full h-[250px] rounded-2xl overflow-hidden mt-8 opacity-80 border border-[var(--border-glass)]">
-                <Image src="/images/img4.JPG" alt="Soporte Menntun" fill className="object-cover" unoptimized />
+                <Image src="/images/contact-support.jpg" alt="Soporte Menntun" fill className="object-cover" unoptimized />
               </div>
             </div>
           </div>
