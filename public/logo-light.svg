@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="hsl(263, 90%, 60%)" />
+      <stop offset="100%" stop-color="hsl(190, 95%, 50%)" />
+    </linearGradient>
+    <style>
+      .text {
+        font-family: 'Outfit', -apple-system, sans-serif;
+        font-size: 56px;
+        font-weight: 800;
+        letter-spacing: -1px;
+      }
+    </style>
+  </defs>
+  
+  <g transform="translate(10, 10)">
+    <rect width="80" height="80" rx="20" fill="url(#grad)" />
+    <svg x="16" y="16" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.42 10.922a2 2 0 0 0-.019-3.838L12.83 4.3a2 2 0 0 0-1.66 0L2.6 7.08a2 2 0 0 0 0 3.832l8.57 3.698a2 2 0 0 0 1.66 0z"/>
+      <path d="M22 10v6"/>
+      <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>
+    </svg>
+  </g>
+
+  <text x="110" y="68" class="text" fill="#1a1a1a">Menntun</text>
+</svg>

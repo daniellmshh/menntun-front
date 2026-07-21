@@ -116,7 +116,7 @@ export default function LandingPage() {
 
           {/* Hero Image / App Mockup */}
           <div className="mt-16 w-full max-w-5xl rounded-[var(--radius-xl)] p-2 bg-gradient-to-br from-[var(--border-glass)] to-[var(--bg-base)] shadow-2xl relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-transparent to-transparent z-10 bottom-0 h-1/3" />
+            <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--bg-base)] to-transparent z-10 rounded-b-[var(--radius-lg)]" />
             <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] glass-panel aspect-[16/9] w-full">
                <Image 
                   src="/images/hero-dashboard.jpg" 
