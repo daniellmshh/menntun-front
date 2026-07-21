@@ -21,8 +21,8 @@ import {
   ShieldCheck,
   UserMinus,
   UserPlus,
-} from "lucide-react";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -759,15 +759,16 @@ export default function GroupsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      {/* Alert Banner */}
-      {alert && (
-        <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
-      )}
+    <ModuleGuard moduleKey="academic" requireSchoolContext={true}>
+      <div className="flex flex-col h-full space-y-6">
+        {/* Alert Banner */}
+        {alert && (
+          <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
+        )}
 
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
+        {/* Header section */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             {t.title}
           </h1>
@@ -1026,6 +1027,7 @@ export default function GroupsPage() {
           t={t}
         />
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }

@@ -16,6 +16,7 @@ import {
   Layers,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -339,14 +340,15 @@ export default function GradesCatalogPage() {
   });
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      {/* Alert Banner */}
-      {alert && (
-        <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
-      )}
+    <ModuleGuard moduleKey="academic" requireSchoolContext={true}>
+      <div className="flex flex-col h-full space-y-6">
+        {/* Alert Banner */}
+        {alert && (
+          <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
+        )}
 
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* Header section */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
             {t.title}
@@ -532,6 +534,7 @@ export default function GradesCatalogPage() {
           t={t}
         />
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }

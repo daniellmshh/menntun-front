@@ -22,6 +22,7 @@ import {
   UserX,
   User,
 } from "lucide-react";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import Loader from "@/components/shared/Loader";
@@ -490,8 +491,9 @@ export default function SchoolsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* If SUPER_ADMIN, render schools list */}
+    <ModuleGuard moduleKey="schools" requireSchoolContext={true}>
+      <div className="space-y-8 animate-fade-in">
+        {/* If SUPER_ADMIN, render schools list */}
       {user?.role === UserRole.SUPER_ADMIN && (
         <>
           {/* Header section */}
@@ -1404,6 +1406,7 @@ export default function SchoolsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }

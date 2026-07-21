@@ -21,6 +21,7 @@ import {
   Layers,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -660,11 +661,12 @@ export default function SchoolYearsPage() {
   });
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Alert */}
-      {alert && (
-        <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
-      )}
+    <ModuleGuard moduleKey="academic" requireSchoolContext={true}>
+      <div className="flex flex-col h-full">
+        {/* Alert */}
+        {alert && (
+          <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
+        )}
 
       {/* Modals */}
       {(showModal || editYear) && (
@@ -872,6 +874,6 @@ export default function SchoolYearsPage() {
           </div>
         )}
       </div>
-    </div>
+    </ModuleGuard>
   );
 }

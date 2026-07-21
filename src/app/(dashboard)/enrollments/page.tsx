@@ -13,6 +13,7 @@ import {
   Upload,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -124,10 +125,11 @@ export default function EnrollmentsPage() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
-      <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <ModuleGuard moduleKey="enrollments" requireSchoolContext={true}>
+      <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
+        <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-[var(--text-primary)]">
                 {t.sidebar.enrollments}
@@ -338,6 +340,8 @@ export default function EnrollmentsPage() {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </ModuleGuard>
   );
 }

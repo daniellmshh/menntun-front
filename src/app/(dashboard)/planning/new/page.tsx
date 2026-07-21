@@ -110,14 +110,21 @@ export default function NewPlanningPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [catRes, groupsRes, subjectsRes] = await Promise.all([
+        const [catRes, groupsRes, subjectsRes] = await Promise.allSettled([
           getPlanningCatalogo(),
           api.get("/academic/groups"),
           api.get("/academic/subjects"),
         ]);
-        if (catRes.data) setCatalogo(catRes.data);
-        const fetchedGroups = groupsRes.data?.data || [];
-        const fetchedSubjects = subjectsRes.data?.data || [];
+
+        if (catRes.status === "fulfilled" && catRes.value.data) {
+          setCatalogo(catRes.value.data);
+        } else {
+          setError("No se pudo cargar el catálogo curricular.");
+        }
+
+        const fetchedGroups = groupsRes.status === "fulfilled" ? groupsRes.value.data?.data || [] : [];
+        const fetchedSubjects = subjectsRes.status === "fulfilled" ? subjectsRes.value.data?.data || [] : [];
+
         setGroups(fetchedGroups);
         setSubjects(fetchedSubjects);
         if (fetchedGroups.length === 0 || fetchedSubjects.length === 0) {
@@ -127,8 +134,9 @@ export default function NewPlanningPage() {
           setSelectedGroupId(fetchedGroups[0].id);
           setSelectedSubjectId(fetchedSubjects[0].id);
         }
-      } catch {
-        setError("No se pudo cargar el catálogo curricular.");
+      } catch (err) {
+        console.error(err);
+        setError("Error al inicializar la planeación.");
       } finally {
         setLoadingCatalog(false);
       }

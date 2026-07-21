@@ -18,6 +18,7 @@ import { Planning, PlanningStatus } from "@/modules/planning/types";
 import { PlanningModalidadLabels } from "@/modules/planning/constants";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 
 export default function PlanningListPage() {
   const { language } = useLanguageStore();
@@ -75,8 +76,9 @@ export default function PlanningListPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header section */}
+    <ModuleGuard moduleKey="planning" requireSchoolContext={false}>
+      <div className="space-y-6">
+        {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
@@ -218,6 +220,7 @@ export default function PlanningListPage() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }

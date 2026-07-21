@@ -23,6 +23,7 @@ import {
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
@@ -390,8 +391,9 @@ export default function StudentsPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header section */}
+    <ModuleGuard moduleKey="students" requireSchoolContext={true}>
+      <div className="space-y-8 animate-fade-in">
+        {/* Header section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
           <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
@@ -1081,6 +1083,7 @@ export default function StudentsPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }

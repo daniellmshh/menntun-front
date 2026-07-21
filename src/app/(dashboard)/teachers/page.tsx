@@ -26,6 +26,7 @@ import {
   Save,
   Info,
 } from "lucide-react";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import Loader from "@/components/shared/Loader";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -409,8 +410,9 @@ export default function TeachersPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header section */}
+    <ModuleGuard moduleKey="teachers" requireSchoolContext={true}>
+      <div className="space-y-8 animate-fade-in">
+        {/* Header section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-1 text-center md:text-left">
           <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
@@ -1108,6 +1110,7 @@ export default function TeachersPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </ModuleGuard>
   );
 }
