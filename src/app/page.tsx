@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { 
   GraduationCap, 
   ArrowRight, 
@@ -38,6 +39,32 @@ export default function LandingPage() {
   const WHATSAPP_MESSAGE = encodeURIComponent("¡Hola! Me interesa conocer más sobre Menntun y sus paquetes.");
   const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
 
+  // Animation variants
+  const fadeUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
+  
+  const fadeLeft = {
+    hidden: { opacity: 0, x: -30 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
+
+  const fadeRight = {
+    hidden: { opacity: 0, x: 30 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-sans overflow-x-hidden">
       {/* Decorative ambient glows */}
@@ -45,7 +72,12 @@ export default function LandingPage() {
       <div className="ambient-glow ambient-glow-2" />
 
       {/* 1. NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 h-[var(--header-height)] z-50 bg-[var(--bg-panel)]/40 backdrop-blur-md border-b border-[var(--border-glass)] transition-all duration-300">
+      <motion.header 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="fixed top-0 left-0 right-0 h-[var(--header-height)] z-50 bg-[var(--bg-panel)]/40 backdrop-blur-md border-b border-[var(--border-glass)] transition-all duration-300"
+      >
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -86,36 +118,41 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       <main className="pt-[var(--header-height)] relative z-10">
         
         {/* 2. HERO SECTION */}
-        <section className="max-w-7xl mx-auto px-6 pt-24 pb-20 md:pt-32 md:pb-32 flex flex-col items-center text-center gap-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--accent-primary-light)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary-light)] text-sm font-semibold mb-4">
+        <motion.section 
+          initial="hidden" 
+          animate="visible" 
+          variants={staggerContainer}
+          className="max-w-7xl mx-auto px-6 pt-24 pb-20 md:pt-32 md:pb-32 flex flex-col items-center text-center gap-8"
+        >
+          <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--accent-primary-light)]/30 bg-[var(--accent-primary)]/10 text-[var(--accent-primary-light)] text-sm font-semibold mb-4">
             <Sparkles size={16} />
             El futuro de la gestión escolar
-          </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-tight">
+          </motion.div>
+          <motion.h1 variants={fadeUp} className="text-5xl md:text-7xl font-extrabold tracking-tight max-w-4xl leading-tight">
             Gestión Inteligente para Colegios y <br className="hidden md:block" />
             <span className="gradient-accent-text">Maestros Independientes</span>
-          </h1>
-          <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl leading-relaxed">
+          </motion.h1>
+          <motion.p variants={fadeUp} className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl leading-relaxed">
             Menntun es un sistema modular, seguro y veloz que centraliza toda la administración educativa. 
             Desde planeaciones impulsadas por Inteligencia Artificial (NEM) hasta control total multi-plantel.
-          </p>
+          </motion.p>
           
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-6">
+          <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center gap-4 mt-6">
             <Link href="/login" className="glass-button h-14 px-8 text-lg w-full sm:w-auto shadow-glow">
               Comenzar Ahora <ArrowRight size={20} className="ml-2" />
             </Link>
             <a href="#features" className="glass-button-secondary h-14 px-8 text-lg w-full sm:w-auto flex items-center justify-center">
               Descubrir más
             </a>
-          </div>
+          </motion.div>
 
           {/* Hero Image / App Mockup */}
-          <div className="mt-16 w-full max-w-5xl rounded-[var(--radius-xl)] p-2 bg-gradient-to-br from-[var(--border-glass)] to-[var(--bg-base)] shadow-2xl relative">
+          <motion.div variants={fadeUp} className="mt-16 w-full max-w-5xl rounded-[var(--radius-xl)] p-2 bg-gradient-to-br from-[var(--border-glass)] to-[var(--bg-base)] shadow-2xl relative">
             <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[var(--bg-base)] to-transparent z-10 rounded-b-[var(--radius-lg)]" />
             <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] glass-panel aspect-[16/9] w-full">
                <Image 
@@ -127,21 +164,24 @@ export default function LandingPage() {
                   unoptimized
                />
             </div>
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
         {/* 3. FEATURES SECTION (What it does) */}
-        <section id="features" className="py-24 bg-[var(--bg-surface)]/50 border-y border-[var(--border-glass)]">
+        <section id="features" className="py-24 bg-[var(--bg-surface)]/50 border-y border-[var(--border-glass)] overflow-hidden">
           <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
+            <motion.div 
+              initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeUp}
+              className="text-center mb-16"
+            >
               <h2 className="text-3xl md:text-5xl font-bold mb-4">Lo que Menntun hace por ti</h2>
               <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">
                 Diseñado para reducir la carga administrativa y potenciar el aprendizaje con tecnología de punta.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
-              <div className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-12 items-center mb-24 overflow-hidden">
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeLeft} className="space-y-6">
                 <div className="w-14 h-14 rounded-2xl bg-[var(--accent-primary)]/15 flex items-center justify-center text-[var(--accent-primary)]">
                   <Cpu size={28} />
                 </div>
@@ -154,17 +194,17 @@ export default function LandingPage() {
                   <li className="flex items-center gap-3 text-sm font-medium"><CheckCircle2 className="text-[var(--accent-success)]" size={18} /> Cero alucinaciones, contexto estricto de la SEP.</li>
                   <li className="flex items-center gap-3 text-sm font-medium"><CheckCircle2 className="text-[var(--accent-success)]" size={18} /> Respeto total a la autonomía del maestro.</li>
                 </ul>
-              </div>
-              <div className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
+              </motion.div>
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeRight} className="relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
                  <Image src="/images/ai-planning.jpg" alt="Planeaciones IA" fill className="object-cover object-left-top" unoptimized />
-              </div>
+              </motion.div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="order-2 md:order-1 relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
+            <div className="grid md:grid-cols-2 gap-12 items-center overflow-hidden">
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeLeft} className="order-2 md:order-1 relative rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border-glass)] shadow-glass h-[400px]">
                 <Image src="/images/modular-architecture.jpg" alt="Arquitectura Modular" fill className="object-cover object-left-top" unoptimized />
-              </div>
-              <div className="space-y-6 order-1 md:order-2">
+              </motion.div>
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={fadeRight} className="space-y-6 order-1 md:order-2">
                 <div className="w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/15 flex items-center justify-center text-[var(--accent-secondary)]">
                   <Database size={28} />
                 </div>
@@ -177,52 +217,58 @@ export default function LandingPage() {
                   <li className="flex items-center gap-3 text-sm font-medium"><CheckCircle2 className="text-[var(--accent-success)]" size={18} /> Activación dinámica de módulos.</li>
                   <li className="flex items-center gap-3 text-sm font-medium"><CheckCircle2 className="text-[var(--accent-success)]" size={18} /> Gestión multi-escuela para administradores.</li>
                 </ul>
-              </div>
+              </motion.div>
             </div>
           </div>
         </section>
 
         {/* 4. ROADMAP (What it will do) */}
         <section id="roadmap" className="py-24">
-          <div className="max-w-7xl mx-auto px-6 text-center">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">El Futuro de Menntun</h2>
-            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto mb-16">
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
+            className="max-w-7xl mx-auto px-6 text-center"
+          >
+            <motion.h2 variants={fadeUp} className="text-3xl md:text-5xl font-bold mb-4">El Futuro de Menntun</motion.h2>
+            <motion.p variants={fadeUp} className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto mb-16">
               El desarrollo nunca se detiene. Esto es lo que llegará muy pronto a nuestro ecosistema.
-            </p>
+            </motion.p>
 
             <div className="grid sm:grid-cols-3 gap-8">
-              <div className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
+              <motion.div variants={fadeUp} className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
                 <Smartphone size={48} className="text-[var(--accent-primary-light)]" />
                 <h3 className="text-xl font-bold">Apps Móviles Nativas</h3>
                 <p className="text-sm text-[var(--text-muted)]">Aplicaciones para iOS (SwiftUI) y Android (Kotlin) conectadas a la misma API para acceso desde cualquier lugar.</p>
-              </div>
-              <div className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
+              </motion.div>
+              <motion.div variants={fadeUp} className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
                 <Users size={48} className="text-[var(--accent-secondary)]" />
                 <h3 className="text-xl font-bold">Portal de Padres y Alumnos</h3>
                 <p className="text-sm text-[var(--text-muted)]">Cuentas de solo lectura para que las familias den seguimiento a calificaciones, asistencias y reportes disciplinarios.</p>
-              </div>
-              <div className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
+              </motion.div>
+              <motion.div variants={fadeUp} className="glass-panel p-8 text-center flex flex-col items-center gap-4 hover:-translate-y-2 transition-transform duration-300">
                 <ShieldCheck size={48} className="text-[var(--accent-cyan)]" />
                 <h3 className="text-xl font-bold">Pagos y Facturación</h3>
                 <p className="text-sm text-[var(--text-muted)]">Módulo financiero integral para gestionar colegiaturas, becas, cobros automatizados y facturación local.</p>
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         {/* 5. PRICING SECTION */}
         <section id="pricing" className="py-24 bg-[var(--bg-surface)]/50 border-y border-[var(--border-glass)]">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-16">
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
+            className="max-w-7xl mx-auto px-6"
+          >
+            <motion.div variants={fadeUp} className="text-center mb-16">
               <h2 className="text-3xl md:text-5xl font-bold mb-4">Paquetes Modulares</h2>
               <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">
                 Elige el plan que mejor se adapte al tamaño de tu institución.
               </p>
-            </div>
+            </motion.div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* Basic */}
-              <div className="glass-panel p-8 flex flex-col gap-6">
+              <motion.div variants={fadeUp} className="glass-panel p-8 flex flex-col gap-6">
                 <div>
                   <h3 className="text-2xl font-bold">Básico</h3>
                   <p className="text-sm text-[var(--text-secondary)] mt-1">Para escuelas pequeñas</p>
@@ -235,10 +281,10 @@ export default function LandingPage() {
                   <li className="flex items-center gap-3 text-sm text-[var(--text-muted)] opacity-50"><CheckCircle2 size={16} /> IA Generativa</li>
                 </ul>
                 <button className="glass-button-secondary w-full">Me interesa</button>
-              </div>
+              </motion.div>
 
               {/* Pro (Highlighted) */}
-              <div className="glass-panel-interactive p-8 flex flex-col gap-6 border-[var(--accent-primary)]/50 relative transform md:-translate-y-4 shadow-glow">
+              <motion.div variants={fadeUp} className="glass-panel-interactive p-8 flex flex-col gap-6 border-[var(--accent-primary)]/50 relative transform md:-translate-y-4 shadow-glow z-10 hover:scale-[1.02] transition-transform duration-300">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] px-4 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
                   Recomendado
                 </div>
@@ -254,10 +300,10 @@ export default function LandingPage() {
                   <li className="flex items-center gap-3 text-sm"><CheckCircle2 size={16} className="text-[var(--accent-secondary)]" /> Soporte Prioritario</li>
                 </ul>
                 <button className="glass-button w-full">Contactar Ventas</button>
-              </div>
+              </motion.div>
 
               {/* Enterprise */}
-              <div className="glass-panel p-8 flex flex-col gap-6">
+              <motion.div variants={fadeUp} className="glass-panel p-8 flex flex-col gap-6">
                 <div>
                   <h3 className="text-2xl font-bold">Enterprise</h3>
                   <p className="text-sm text-[var(--text-secondary)] mt-1">Para grupos de colegios</p>
@@ -270,17 +316,20 @@ export default function LandingPage() {
                   <li className="flex items-center gap-3 text-sm"><CheckCircle2 size={16} className="text-[var(--accent-primary)]" /> Desarrollo a la medida</li>
                 </ul>
                 <button className="glass-button-secondary w-full">Cotizar a medida</button>
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         </section>
 
         {/* 6. CONTACT SECTION */}
         <section id="contact" className="py-24 relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center">
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
+            className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center"
+          >
             
             {/* Form */}
-            <div className="glass-panel p-8 md:p-12 space-y-6 z-10">
+            <motion.div variants={fadeLeft} className="glass-panel p-8 md:p-12 space-y-6 z-10">
               <h2 className="text-3xl font-bold">¿Tienes dudas? Escríbenos</h2>
               <p className="text-[var(--text-secondary)] text-sm">Déjanos tus datos y un asesor se pondrá en contacto contigo lo antes posible para una demostración.</p>
               
@@ -301,10 +350,10 @@ export default function LandingPage() {
                   <Send size={18} /> Enviar Mensaje
                 </button>
               </form>
-            </div>
+            </motion.div>
 
             {/* Direct Contact (WhatsApp) */}
-            <div className="flex flex-col justify-center space-y-8 z-10">
+            <motion.div variants={fadeRight} className="flex flex-col justify-center space-y-8 z-10">
               <div>
                 <h2 className="text-4xl font-extrabold mb-4">Habla directamente con nosotros</h2>
                 <p className="text-[var(--text-secondary)] text-lg">
@@ -326,8 +375,8 @@ export default function LandingPage() {
               <div className="relative w-full h-[250px] rounded-2xl overflow-hidden mt-8 opacity-80 border border-[var(--border-glass)]">
                 <Image src="/images/contact-support.jpg" alt="Soporte Menntun" fill className="object-cover" unoptimized />
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </section>
 
       </main>
