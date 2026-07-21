@@ -123,6 +123,7 @@ export default function NewPlanningPage() {
         if (fetchedGroups.length === 0 || fetchedSubjects.length === 0) {
           setIsStandalone(true);
         } else {
+          setIsStandalone(false);
           setSelectedGroupId(fetchedGroups[0].id);
           setSelectedSubjectId(fetchedSubjects[0].id);
         }
@@ -566,28 +567,7 @@ export default function NewPlanningPage() {
               <Users size={20} className="text-[var(--accent-primary)]" />
               Asignación del Grupo
             </h2>
-            <div className="flex gap-3 mb-5">
-              <button
-                onClick={() => setIsStandalone(false)}
-                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  !isStandalone
-                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
-                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
-                }`}
-              >
-                Grupo existente
-              </button>
-              <button
-                onClick={() => setIsStandalone(true)}
-                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-all ${
-                  isStandalone
-                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--accent-primary)]"
-                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
-                }`}
-              >
-                Modo independiente
-              </button>
-            </div>
+
 
             {!isStandalone ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -630,8 +610,6 @@ export default function NewPlanningPage() {
                     className="glass-input w-full"
                   >
                     <option value="PREESCOLAR">Preescolar</option>
-                    <option value="PRIMARIA">Primaria</option>
-                    <option value="SECUNDARIA">Secundaria</option>
                   </select>
                 </div>
                 <div>
@@ -641,7 +619,7 @@ export default function NewPlanningPage() {
                     onChange={(e) => setStandaloneGradeOrder(Number(e.target.value))}
                     className="glass-input w-full"
                   >
-                    {[1, 2, 3, 4, 5, 6].map((g) => (
+                    {[1, 2, 3].map((g) => (
                       <option key={g} value={g}>{g}°</option>
                     ))}
                   </select>
