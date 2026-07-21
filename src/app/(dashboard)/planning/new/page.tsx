@@ -227,8 +227,8 @@ export default function NewPlanningPage() {
       const token = session?.access_token;
       if (!token) throw new Error("Sesión expirada. Por favor recarga.");
 
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
-      const response = await fetch(`${backendUrl}/api/planning/generate/stream`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+      const response = await fetch(`${apiUrl}/planning/generate/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
