@@ -15,6 +15,7 @@ export interface RequestUser {
   schoolId: string;
   firstName: string;
   lastName: string;
+  isIndependent?: boolean;
   teacherProfile?: {
     id: string;
     userId: string;

@@ -35,45 +35,185 @@ import { UserRole } from "@/types";
 import { useActiveModules, ACTIVE_MODULES_QUERY_KEY } from "@/hooks/useActiveModules";
 import { useQueryClient } from "@tanstack/react-query";
 
+// ─── Nav Config ──────────────────────────────────────────────────────────────
+// requiredRoles: null = visible para todos los roles autenticados
+// moduleKey: null = no requiere módulo activo (siempre visible si el rol aplica)
+// hideIfIndependent: true = no visible en workspaces INDEPENDENT
+// ─────────────────────────────────────────────────────────────────────────────
+
 interface SidebarItem {
   name: string;
   href?: string;
   icon: React.ComponentType<{ className?: string }>;
-  isCore?: boolean;
-  moduleKey?: string;
+  requiredRoles: UserRole[] | null;
+  moduleKey: string | null;
+  hideIfIndependent?: boolean;
   subItems?: {
     name: string;
     href: string;
     icon: React.ComponentType<{ className?: string }>;
-    isCore?: boolean;
-    moduleKey?: string;
+    requiredRoles: UserRole[] | null;
+    moduleKey: string | null;
+    hideIfIndependent?: boolean;
   }[];
 }
 
 const NAV_ITEMS: SidebarItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, isCore: true },
-  { name: "Schools", href: "/schools", icon: Building2, isCore: true },
-  { name: "Academic", href: "/academic", icon: GraduationCap, moduleKey: "academic" },
-  { name: "SchoolYears", href: "/school-years", icon: CalendarDays, moduleKey: "schoolYears" },
+  {
+    name: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    requiredRoles: null,
+    moduleKey: null,
+  },
+  {
+    name: "Schools",
+    href: "/schools",
+    icon: Building2,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "schools",
+    hideIfIndependent: true,
+  },
+  {
+    name: "SchoolYears",
+    href: "/school-years",
+    icon: CalendarDays,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "academic",
+    hideIfIndependent: true,
+  },
   {
     name: "Catalogs",
     icon: FolderOpen,
-    moduleKey: "gradesCatalog",
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "academic",
+    hideIfIndependent: true,
     subItems: [
-      { name: "GradesCatalog", href: "/grades-catalog", icon: BookMarked, moduleKey: "gradesCatalog" },
+      {
+        name: "GradesCatalog",
+        href: "/grades-catalog",
+        icon: BookMarked,
+        requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+        moduleKey: "academic",
+        hideIfIndependent: true,
+      },
     ],
   },
-  { name: "Groups", href: "/groups", icon: Layers, moduleKey: "groups" },
-  { name: "Students", href: "/students", icon: Users, moduleKey: "students" },
-  { name: "Teachers", href: "/teachers", icon: ClipboardList, moduleKey: "teachers" },
-  { name: "Parents", href: "/parents", icon: UserCheck, moduleKey: "parents" },
-  { name: "Attendance", href: "/attendance", icon: Calendar, moduleKey: "attendance" },
-  { name: "Grades", href: "/grades", icon: Award, moduleKey: "grades" },
-  { name: "Planning", href: "/planning", icon: Compass, moduleKey: "planning" },
-  { name: "Enrollments", href: "/enrollments", icon: BookOpen, moduleKey: "enrollments" },
-  { name: "Scholarships", href: "/scholarships", icon: FileText, moduleKey: "scholarships" },
-  { name: "Communications", href: "/communications", icon: MessageSquare, moduleKey: "communications" },
+  {
+    name: "Groups",
+    href: "/groups",
+    icon: Layers,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "academic",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Teachers",
+    href: "/teachers",
+    icon: ClipboardList,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "teachers",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Students",
+    href: "/students",
+    icon: Users,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "students",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Parents",
+    href: "/parents",
+    icon: UserCheck,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "parents",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Enrollments",
+    href: "/enrollments",
+    icon: BookOpen,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "enrollments",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Attendance",
+    href: "/attendance",
+    icon: Calendar,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.TEACHER],
+    moduleKey: "attendance",
+  },
+  {
+    name: "Grades",
+    href: "/grades",
+    icon: Award,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.TEACHER],
+    moduleKey: "grades",
+  },
+  {
+    name: "Planning",
+    href: "/planning",
+    icon: Compass,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.TEACHER],
+    moduleKey: "planning",
+  },
+  {
+    name: "Scholarships",
+    href: "/scholarships",
+    icon: FileText,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "scholarships",
+    hideIfIndependent: true,
+  },
+  {
+    name: "Communications",
+    href: "/communications",
+    icon: MessageSquare,
+    requiredRoles: null,
+    moduleKey: "communications",
+  },
 ];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+interface SubItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiredRoles: UserRole[] | null;
+  moduleKey: string | null;
+  hideIfIndependent?: boolean;
+}
+
+function isItemVisible(
+  item: SidebarItem | SubItem,
+  userRole: UserRole | undefined,
+  isIndependent: boolean,
+  modules: string[],
+  isLoadingModules: boolean,
+): boolean {
+  if (!userRole) return false;
+
+  // Role check
+  if (item.requiredRoles && !item.requiredRoles.includes(userRole)) return false;
+
+  // Independent workspace restriction
+  if (item.hideIfIndependent && isIndependent) return false;
+
+  // Module check (SUPER_ADMIN bypasses module checks)
+  if (item.moduleKey && userRole !== UserRole.SUPER_ADMIN) {
+    if (isLoadingModules) return false;
+    const normalizedModules = modules.map((m) => m.toLowerCase());
+    if (!normalizedModules.includes(item.moduleKey.toLowerCase())) return false;
+  }
+
+  return true;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -96,6 +236,8 @@ export default function Sidebar({
   const { modules, isLoading } = useActiveModules();
   const queryClient = useQueryClient();
 
+  const isIndependent = user?.isIndependent ?? false;
+
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     catalogs: true,
   });
@@ -107,7 +249,6 @@ export default function Sidebar({
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    // Invalidate the active modules cache so that the next login always fetches fresh data
     queryClient.removeQueries({ queryKey: ACTIVE_MODULES_QUERY_KEY });
     clear();
     router.push("/login");
@@ -136,7 +277,6 @@ export default function Sidebar({
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-glow flex items-center justify-center flex-shrink-0">
             <Sparkles size={20} color="#fff" />
           </div>
-
           {!isCollapsed && (
             <span className="font-extrabold text-xl tracking-wide gradient-accent-text transition-opacity duration-200">
               Menntun
@@ -147,73 +287,24 @@ export default function Sidebar({
         {/* Sidebar Navigation */}
         <nav className="flex-1 px-3 py-5 space-y-2 overflow-y-auto custom-scrollbar">
           {NAV_ITEMS.map((item) => {
-            // Determine if the user has access to this core item based on role
-            if (
-              item.href &&
-              (item.href === "/schools" ||
-                item.href === "/school-years" ||
-                item.href === "/grades-catalog" ||
-                item.href === "/groups") &&
-              user?.role !== UserRole.SUPER_ADMIN &&
-              user?.role !== UserRole.SCHOOL_ADMIN
-            ) {
-              return null;
-            }
+            // Filter sub-items
+            const visibleSubItems = (item.subItems || []).filter((sub) =>
+              isItemVisible(sub, user?.role, isIndependent, modules, isLoading)
+            );
 
-            // Handle sub-items filtering dynamically
-            let visibleSubItems = item.subItems || [];
-            if (item.subItems) {
-              visibleSubItems = item.subItems.filter((sub) => {
-                if (
-                  sub.href === "/grades-catalog" &&
-                  user?.role !== UserRole.SUPER_ADMIN &&
-                  user?.role !== UserRole.SCHOOL_ADMIN
-                ) {
-                  return false;
-                }
-                return true;
-              });
+            // If item has sub-items but none are visible, skip
+            if (item.subItems && visibleSubItems.length === 0) return null;
 
-              if (visibleSubItems.length === 0) {
-                return null;
-              }
-            }
+            // Check visibility for the parent item itself
+            if (!isItemVisible(item, user?.role, isIndependent, modules, isLoading)) return null;
 
-            // Filter optional modules based on what is active (except for SUPER_ADMIN)
-            const isOptional = !item.isCore;
-            const moduleName = item.moduleKey || item.name.toLowerCase();
-
-            if (isOptional && user?.role !== UserRole.SUPER_ADMIN) {
-              // Hide optional modules while loading to prevent flickering of unauthorized modules
-              if (isLoading) {
-                return null;
-              }
-              if (!modules.includes(moduleName)) {
-                return null;
-              }
-              // If teacher, check their allowedModules (only restricts when non-empty)
-              if (user?.role === UserRole.TEACHER) {
-                const allowedModules = user.teacherProfile?.allowedModules || [];
-                if (allowedModules.length > 0) {
-                  const isAllowed = allowedModules
-                    .map((m: string) => m.toLowerCase())
-                    .includes(moduleName);
-                  if (!isAllowed) {
-                    return null;
-                  }
-                }
-              }
-            }
-
-            const hasSubItems = !!item.subItems;
+            const hasSubItems = item.subItems !== undefined;
 
             if (hasSubItems) {
               const isMenuOpen = openMenus[item.name.toLowerCase()] !== false;
               const Icon = item.icon;
               const sidebarKey = item.name.toLowerCase() as keyof typeof t.sidebar;
               const translatedName = t.sidebar[sidebarKey] || item.name;
-
-              // Check if any sub-item is active to highlight the parent
               const isAnySubActive = visibleSubItems.some((sub) => pathname.startsWith(sub.href));
 
               return (
@@ -235,9 +326,10 @@ export default function Sidebar({
                       )}
                     </div>
                     {!isCollapsed && (
-                      isMenuOpen ? <ChevronUp size={16} className="text-[var(--text-muted)]" /> : <ChevronDown size={16} className="text-[var(--text-muted)]" />
+                      isMenuOpen
+                        ? <ChevronUp size={16} className="text-[var(--text-muted)]" />
+                        : <ChevronDown size={16} className="text-[var(--text-muted)]" />
                     )}
-                    {/* Collapsed Tooltip */}
                     {isCollapsed && (
                       <div className="absolute left-16 z-50 hidden group-hover:block px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-primary)] shadow-main whitespace-nowrap">
                         {translatedName}
@@ -283,7 +375,10 @@ export default function Sidebar({
               );
             }
 
-            const isActive = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href || "");
+            const isActive =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(item.href || "");
             const Icon = item.icon;
             const sidebarKey = (
               item.name === "SchoolYears"
@@ -307,12 +402,9 @@ export default function Sidebar({
                 `}
               >
                 <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"}`} />
-
                 {!isCollapsed && (
                   <span className="text-sm font-medium tracking-wide transition-opacity duration-200">{translatedName}</span>
                 )}
-
-                {/* Collapsed Tooltip */}
                 {isCollapsed && (
                   <div className="absolute left-16 z-50 hidden group-hover:block px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-primary)] shadow-main whitespace-nowrap">
                     {translatedName}
