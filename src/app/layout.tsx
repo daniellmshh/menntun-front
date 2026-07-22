@@ -9,7 +9,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Menntun - School Management System",
+  title: "Menntun",
   description: "A premium modular school management system",
 };
 
