@@ -35,7 +35,7 @@ export default function LandingPage() {
     setMounted(true);
   }, []);
 
-  const WHATSAPP_NUMBER = "521234567890"; // Reemplazar con el número real
+  const WHATSAPP_NUMBER = "528126087821"; // Nuevo número real
   const WHATSAPP_MESSAGE = encodeURIComponent("¡Hola! Me interesa conocer más sobre Menntun y sus paquetes.");
   const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
 
@@ -361,15 +361,39 @@ export default function LandingPage() {
                 </p>
               </div>
               
-              <a 
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-4 bg-[#25D366] hover:bg-[#1DA851] text-white px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(37,211,102,0.3)] transition-all transform hover:-translate-y-1 w-max font-bold text-lg"
-              >
-                <MessageCircle size={28} />
-                Chatear por WhatsApp
-              </a>
+              <div className="flex flex-col gap-6">
+                <a 
+                  href={WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-4 bg-[#25D366] hover:bg-[#1DA851] text-white px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(37,211,102,0.3)] transition-all transform hover:-translate-y-1 w-full sm:w-max font-bold text-lg"
+                >
+                  <Image src="/whatsapp-icon.svg" width={28} height={28} alt="WhatsApp" className="filter brightness-0 invert" />
+                  Chatear por WhatsApp
+                </a>
+
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Síguenos en nuestras redes</p>
+                  <div className="flex items-center gap-4">
+                    <a 
+                      href="https://www.facebook.com/menntunmx"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 transition-all transform hover:-translate-y-1"
+                    >
+                      <Image src="/facebook-icon.svg" width={32} height={32} alt="Facebook" />
+                    </a>
+                    <a 
+                      href="https://www.instagram.com/menntun.mx/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#E4405F]/10 hover:bg-[#E4405F]/20 border border-[#E4405F]/30 transition-all transform hover:-translate-y-1"
+                    >
+                      <Image src="/instagram-icon.svg" width={32} height={32} alt="Instagram" />
+                    </a>
+                  </div>
+                </div>
+              </div>
 
               {/* Decorative Image */}
               <div className="relative w-full h-[250px] rounded-2xl overflow-hidden mt-8 opacity-80 border border-[var(--border-glass)]">
