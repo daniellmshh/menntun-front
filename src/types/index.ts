@@ -13,6 +13,7 @@ export interface RequestUser {
   email: string;
   role: UserRole;
   schoolId: string;
+  schoolName?: string;
   firstName: string;
   lastName: string;
   isIndependent?: boolean;

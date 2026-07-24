@@ -32,6 +32,7 @@ import { useLanguageStore } from "@/store/language.store";
 import { useAuthStore } from "@/store/auth.store";
 import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
+import { sanitizeInput } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,14 @@ export default function NewPlanningPage() {
     };
     loadData();
   }, []);
+
+  // Reset selected fields when the grade changes to prevent inconsistencies
+  useEffect(() => {
+    setCamposSeleccionados([]);
+    setAddingCampoId("");
+    setAddingContenidoId("");
+    setAddingPdaLiteral("");
+  }, [standaloneGradeOrder, selectedGroupId, isStandalone]);
 
   // ─── Campo+contenido helpers ───────────────────────────────────────────────
 
@@ -962,7 +971,7 @@ export default function NewPlanningPage() {
             {problematica === "__custom__" && (
               <textarea
                 value={problematicaCustom}
-                onChange={(e) => setProblematicaCustom(e.target.value)}
+                onChange={(e) => setProblematicaCustom(sanitizeInput(e.target.value, true))}
                 placeholder="Describe la problemática de tu diagnóstico..."
                 rows={3}
                 className="glass-input w-full"
@@ -977,7 +986,7 @@ export default function NewPlanningPage() {
             </h2>
             <textarea
               value={proposito}
-              onChange={(e) => setProposito(e.target.value)}
+              onChange={(e) => setProposito(sanitizeInput(e.target.value, true))}
               placeholder="Describe el propósito formativo del proyecto, centrado en los aprendizajes de los alumnos..."
               rows={4}
               className="glass-input w-full"
@@ -1019,7 +1028,7 @@ export default function NewPlanningPage() {
               className="glass-input w-full h-24 resize-none"
               placeholder="Ej. Reducir el nivel de ruido, ubicar a estudiantes cerca del docente..."
               value={ajustesTexto}
-              onChange={(e) => setAjustesTexto(e.target.value)}
+              onChange={(e) => setAjustesTexto(sanitizeInput(e.target.value, false))}
             />
           </div>
 
@@ -1032,7 +1041,7 @@ export default function NewPlanningPage() {
               className="glass-input w-full h-24 resize-none"
               placeholder="Ej. Convivencia escolar, visita a la biblioteca..."
               value={pmcTexto}
-              onChange={(e) => setPmcTexto(e.target.value)}
+              onChange={(e) => setPmcTexto(sanitizeInput(e.target.value, false))}
             />
           </div>
         </div>
