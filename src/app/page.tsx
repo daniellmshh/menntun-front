@@ -368,7 +368,7 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-4 bg-[#25D366] hover:bg-[#1DA851] text-white px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(37,211,102,0.3)] transition-all transform hover:-translate-y-1 w-full sm:w-max font-bold text-lg"
                 >
-                  <Image src="/whatsapp-icon.svg" width={28} height={28} alt="WhatsApp" className="filter brightness-0 invert" />
+                  <Image src="/images/whatsapp-icon.svg" width={28} height={28} alt="WhatsApp" className="filter brightness-0 invert" unoptimized style={{ width: "auto", height: "auto" }} />
                   Chatear por WhatsApp
                 </a>
 
@@ -381,7 +381,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 transition-all transform hover:-translate-y-1"
                     >
-                      <Image src="/facebook-icon.svg" width={32} height={32} alt="Facebook" />
+                      <Image src="/images/facebook-icon.svg" width={32} height={32} alt="Facebook" unoptimized style={{ width: "auto", height: "auto" }} />
                     </a>
                     <a 
                       href="https://www.instagram.com/menntun.mx/"
@@ -389,7 +389,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#E4405F]/10 hover:bg-[#E4405F]/20 border border-[#E4405F]/30 transition-all transform hover:-translate-y-1"
                     >
-                      <Image src="/instagram-icon.svg" width={32} height={32} alt="Instagram" />
+                      <Image src="/images/instagram-icon.svg" width={32} height={32} alt="Instagram" unoptimized style={{ width: "auto", height: "auto" }} />
                     </a>
                   </div>
                 </div>
