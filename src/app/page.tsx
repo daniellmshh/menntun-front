@@ -366,7 +366,7 @@ export default function LandingPage() {
                   href={WHATSAPP_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-4 bg-[#25D366] hover:bg-[#1DA851] text-white px-8 py-4 rounded-2xl shadow-[0_0_30px_rgba(37,211,102,0.3)] transition-all transform hover:-translate-y-1 w-full sm:w-max font-bold text-lg"
+                  className="inline-flex items-center justify-center gap-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-light)] text-white px-8 py-4 rounded-2xl shadow-glow transition-all transform hover:-translate-y-1 w-full sm:w-max font-bold text-lg"
                 >
                   <Image src="/images/whatsapp-icon.svg" width={28} height={28} alt="WhatsApp" className="filter brightness-0 invert w-7 h-7" unoptimized />
                   Chatear por WhatsApp
@@ -379,7 +379,7 @@ export default function LandingPage() {
                       href="https://www.facebook.com/menntunmx"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 transition-all transform hover:-translate-y-1"
+                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1"
                     >
                       <Image src="/images/facebook-icon.svg" width={32} height={32} alt="Facebook" className="w-8 h-8" unoptimized />
                     </a>
@@ -387,7 +387,7 @@ export default function LandingPage() {
                       href="https://www.instagram.com/menntun.mx/"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[#E4405F]/10 hover:bg-[#E4405F]/20 border border-[#E4405F]/30 transition-all transform hover:-translate-y-1"
+                      className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1"
                     >
                       <Image src="/images/instagram-icon.svg" width={32} height={32} alt="Instagram" className="w-8 h-8" unoptimized />
                     </a>
