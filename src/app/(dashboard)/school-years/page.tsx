@@ -874,6 +874,7 @@ export default function SchoolYearsPage() {
           </div>
         )}
       </div>
+      </div>
     </ModuleGuard>
   );
 }

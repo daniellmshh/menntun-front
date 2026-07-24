@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   UserMinus,
   UserPlus,
+} from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";

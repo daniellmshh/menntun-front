@@ -341,7 +341,7 @@ export default function PlanningDetailPage() {
           {[
             { label: "MAESTRA", value: teacherName },
             { label: "GRADO / GRUPO", value: groupLabel },
-            { label: "PERIODO", value: planning.periodoProyecto || "—" },
+            { label: "PERIODO", value: planning.startDate && planning.endDate ? `Del ${new Date(planning.startDate).toISOString().split('T')[0]} al ${new Date(planning.endDate).toISOString().split('T')[0]}` : planning.periodoProyecto || "—" },
             { label: "MODALIDAD", value: PlanningModalidadLabels[planning.modalidad] || planning.modalidad },
             {
               label: "PROBLEMÁTICA",

@@ -87,7 +87,9 @@ export default function NewPlanningPage() {
   const [isStandalone, setIsStandalone] = useState(false);
   const [standaloneLevel, setStandaloneLevel] = useState<NivelEducativo>(NivelEducativo.PREESCOLAR);
   const [standaloneGradeOrder, setStandaloneGradeOrder] = useState(1);
-  const [periodoProyecto, setPeriodoProyecto] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [activitiesPerDay, setActivitiesPerDay] = useState<number>(1);
   const [modalidad, setModalidad] = useState<PlanningModalidad>(PlanningModalidad.PROYECTOS);
 
   // ─── STEP 1: Curricular ────────────────────────────────────────────────────
@@ -103,8 +105,8 @@ export default function NewPlanningPage() {
   const [problematicaCustom, setProblematicaCustom] = useState("");
   const [proposito, setProposito] = useState("");
   const [instrSeleccionados, setInstrSeleccionados] = useState<string[]>([]);
-  const [ajustesSeleccionados, setAjustesSeleccionados] = useState<string[]>([]);
-  const [pmcSeleccionados, setPmcSeleccionados] = useState<string[]>([]);
+  const [ajustesTexto, setAjustesTexto] = useState("");
+  const [pmcTexto, setPmcTexto] = useState("");
 
   // Load catalog + academic data
   useEffect(() => {
@@ -193,7 +195,15 @@ export default function NewPlanningPage() {
   // ─── Validation ───────────────────────────────────────────────────────────
 
   const canProceed = (): boolean => {
-    if (step === 0) return !!modalidad && !!periodoProyecto;
+    if (step === 0) {
+      if (!modalidad || !startDate || !endDate) return false;
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = diffTime / (1000 * 3600 * 24);
+      if (diffDays < 0 || diffDays > 15) return false;
+      return true;
+    }
     if (step === 1) return camposSeleccionados.length > 0 && ejesSeleccionados.length > 0;
     if (step === 2) {
       const prob = problematica === "__custom__" ? problematicaCustom : problematica;
@@ -221,12 +231,14 @@ export default function NewPlanningPage() {
         subjectId: !isStandalone ? selectedSubjectId || undefined : undefined,
         standaloneLevel: isStandalone ? standaloneLevel : undefined,
         standaloneGradeOrder: isStandalone ? standaloneGradeOrder : undefined,
-        periodoProyecto,
+        startDate,
+        endDate,
+        activitiesPerDay,
         problematica: prob,
         proposito,
         instrumentoEvaluacion: instrSeleccionados,
-        ajustesRazonables: ajustesSeleccionados,
-        actividadesPmc: pmcSeleccionados,
+        ajustesRazonables: ajustesTexto.trim() ? [ajustesTexto.trim()] : [],
+        actividadesPmc: pmcTexto.trim() ? [pmcTexto.trim()] : [],
       };
 
       // Obtener el token JWT de Supabase
@@ -636,26 +648,77 @@ export default function NewPlanningPage() {
             )}
           </div>
 
-          {/* Periodo */}
+          {/* Fechas y Actividades */}
           <div className="glass-panel p-6">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <Settings2 size={20} className="text-[var(--accent-primary)]" />
               Datos del Proyecto
             </h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm text-[var(--text-secondary)] mb-2">
-                  Periodo del Proyecto <span className="text-[var(--accent-danger)]">*</span>
+                  Fecha Inicio <span className="text-[var(--accent-danger)]">*</span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="Ej. 8 AL 19 DE JUNIO DE 2026"
-                  value={periodoProyecto}
-                  onChange={(e) => setPeriodoProyecto(e.target.value)}
-                  className="glass-input w-full"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  onClick={(e) => {
+                    try {
+                      if ('showPicker' in HTMLInputElement.prototype) {
+                        (e.target as HTMLInputElement).showPicker();
+                      }
+                    } catch (err) {}
+                  }}
+                  className="glass-input w-full [color-scheme:dark] cursor-pointer"
                 />
               </div>
+              <div>
+                <label className="block text-sm text-[var(--text-secondary)] mb-2">
+                  Fecha Fin <span className="text-[var(--accent-danger)]">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  onClick={(e) => {
+                    try {
+                      if ('showPicker' in HTMLInputElement.prototype) {
+                        (e.target as HTMLInputElement).showPicker();
+                      }
+                    } catch (err) {}
+                  }}
+                  className="glass-input w-full [color-scheme:dark] cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--text-secondary)] mb-2">
+                  Actividades / día <span className="text-[var(--accent-danger)]">*</span>
+                </label>
+                <select
+                  value={activitiesPerDay}
+                  onChange={(e) => setActivitiesPerDay(Number(e.target.value))}
+                  className="glass-input w-full cursor-pointer"
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <option key={n} value={n}>{n} {n === 1 ? 'actividad' : 'actividades'}</option>
+                  ))}
+                </select>
+              </div>
             </div>
+            {startDate && endDate && (() => {
+              const start = new Date(startDate);
+              const end = new Date(endDate);
+              const diffTime = end.getTime() - start.getTime();
+              const diffDays = diffTime / (1000 * 3600 * 24);
+              if (diffDays < 0) {
+                return <p className="text-sm text-[var(--accent-danger)] mt-3">La fecha fin no puede ser anterior a la fecha inicio.</p>;
+              }
+              if (diffDays > 15) {
+                return <p className="text-sm text-[var(--accent-danger)] mt-3">El proyecto no puede durar más de 15 días.</p>;
+              }
+              return null;
+            })()}
           </div>
 
           {/* Modalidad */}
@@ -753,22 +816,23 @@ export default function NewPlanningPage() {
                         .find((c) => c.id === addingCampoId)
                         ?.contenidos.find((ct) => ct.id === addingContenidoId)?.pda;
                       
-                      const pdaText = pdaObj?.[pdaKey] || pdaObj?.["grado_1"] || "";
+                      const pdaVal = pdaObj?.[pdaKey] || pdaObj?.["grado_1"] || "";
+                      const pdaList = Array.isArray(pdaVal) ? pdaVal : (pdaVal ? [pdaVal] : []);
 
-                      if (!pdaText) return <p className="text-sm text-[var(--text-muted)]">No hay PDA disponible para este grado.</p>;
+                      if (pdaList.length === 0) return <p className="text-sm text-[var(--text-muted)]">No hay PDA disponible para este grado.</p>;
 
-                      return (
-                        <label className="flex items-start gap-3 cursor-pointer p-2 rounded hover:bg-[var(--bg-panel)] transition-colors">
+                      return pdaList.map((pdaText, idx) => (
+                        <label key={idx} className="flex items-start gap-3 cursor-pointer p-2 rounded hover:bg-[var(--bg-panel)] transition-colors mb-2">
                           <input 
                             type="radio" 
                             name="pda_selection"
-                            className="mt-1"
+                            className="mt-1 flex-shrink-0"
                             checked={addingPdaLiteral === pdaText}
                             onChange={() => setAddingPdaLiteral(pdaText)}
                           />
                           <span className="text-sm text-[var(--text-secondary)] italic leading-relaxed">{pdaText}</span>
                         </label>
-                      );
+                      ));
                     })()}
                   </div>
                 </div>
@@ -951,51 +1015,25 @@ export default function NewPlanningPage() {
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
               Ajustes Razonables
             </h2>
-            <div className="space-y-2">
-              {catalogo.catalogosOperativos.ajustesRazonables.map((aj) => {
-                const sel = ajustesSeleccionados.includes(aj);
-                return (
-                  <button
-                    key={aj}
-                    onClick={() => toggleMulti(aj, ajustesSeleccionados, setAjustesSeleccionados)}
-                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                      sel
-                        ? "bg-[var(--accent-warning)]/15 border-[var(--accent-warning)]/40 text-[var(--text-primary)]"
-                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-warning)]/30"
-                    }`}
-                  >
-                    {sel && <Check size={14} className="inline mr-2 text-[var(--accent-warning)]" />}
-                    {aj}
-                  </button>
-                );
-              })}
-            </div>
+            <textarea
+              className="glass-input w-full h-24 resize-none"
+              placeholder="Ej. Reducir el nivel de ruido, ubicar a estudiantes cerca del docente..."
+              value={ajustesTexto}
+              onChange={(e) => setAjustesTexto(e.target.value)}
+            />
           </div>
 
           {/* Actividades PMC */}
           <div className="glass-panel p-6">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              Actividades PMC
+              Actividades PMC (Opcional)
             </h2>
-            <div className="space-y-2">
-              {catalogo.catalogosOperativos.actividadesPmc.map((pmc) => {
-                const sel = pmcSeleccionados.includes(pmc);
-                return (
-                  <button
-                    key={pmc}
-                    onClick={() => toggleMulti(pmc, pmcSeleccionados, setPmcSeleccionados)}
-                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                      sel
-                        ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
-                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
-                    }`}
-                  >
-                    {sel && <Check size={14} className="inline mr-2 text-[var(--accent-primary)]" />}
-                    {pmc}
-                  </button>
-                );
-              })}
-            </div>
+            <textarea
+              className="glass-input w-full h-24 resize-none"
+              placeholder="Ej. Convivencia escolar, visita a la biblioteca..."
+              value={pmcTexto}
+              onChange={(e) => setPmcTexto(e.target.value)}
+            />
           </div>
         </div>
       )}
@@ -1013,7 +1051,7 @@ export default function NewPlanningPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex gap-2">
                     <span className="text-[var(--text-secondary)] w-24 shrink-0">Periodo:</span>
-                    <span className="text-[var(--text-primary)]">{periodoProyecto || "—"}</span>
+                    <span className="text-[var(--text-primary)]">Del {startDate || "—"} al {endDate || "—"} ({activitiesPerDay} acts/día)</span>
                   </div>
                   <div className="flex gap-2">
                     <span className="text-[var(--text-secondary)] w-24 shrink-0">Metodología:</span>
@@ -1036,11 +1074,11 @@ export default function NewPlanningPage() {
                   </div>
                   <div className="flex gap-2">
                     <span className="text-[var(--text-secondary)] w-28 shrink-0">Ajustes:</span>
-                    <span className="text-[var(--text-primary)]">{ajustesSeleccionados.length > 0 ? `${ajustesSeleccionados.length} seleccionado(s)` : "—"}</span>
+                    <span className="text-[var(--text-primary)]">{ajustesTexto.trim() ? "Agregados" : "—"}</span>
                   </div>
                   <div className="flex gap-2">
                     <span className="text-[var(--text-secondary)] w-28 shrink-0">PMC:</span>
-                    <span className="text-[var(--text-primary)]">{pmcSeleccionados.length > 0 ? `${pmcSeleccionados.length} seleccionado(s)` : "—"}</span>
+                    <span className="text-[var(--text-primary)]">{pmcTexto.trim() ? "Agregadas" : "—"}</span>
                   </div>
                 </div>
               </div>

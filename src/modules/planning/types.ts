@@ -32,7 +32,7 @@ export enum PlanningStatus {
 export interface CatalogoContenido {
   id: string;       // e.g. "L_01"
   nombre: string;   // nombre_contenido
-  pda?: Record<string, string>; // { grado_1: "...", grado_2: "..." }
+  pda?: Record<string, string | string[]>; // { grado_1: ["...", "..."], grado_2: "..." }
 }
 
 export interface CatalogoCampoFormativo {
@@ -149,6 +149,9 @@ export interface Planning {
   content?: string | null;
   // New Sara format fields
   periodoProyecto?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  activitiesPerDay?: number | null;
   problematica?: string | null;
   proposito?: string | null;
   instrumentoEvaluacion?: string[];
