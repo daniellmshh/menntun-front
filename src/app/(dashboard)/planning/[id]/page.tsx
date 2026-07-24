@@ -43,6 +43,7 @@ import { PlanningModalidadLabels } from "@/modules/planning/constants";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
+import { sanitizeInput } from "@/lib/utils";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
 
@@ -177,9 +178,10 @@ export default function PlanningDetailPage() {
   };
 
   const handleMatrizChange = (mIdx: number, fIdx: number, field: string, value: string) => {
+    const sanitizedValue = sanitizeInput(value, false);
     setEditMatriz(prev => {
       const nw = [...prev];
-      nw[mIdx].filas[fIdx] = { ...nw[mIdx].filas[fIdx], [field]: value };
+      nw[mIdx].filas[fIdx] = { ...nw[mIdx].filas[fIdx], [field]: sanitizedValue };
       return nw;
     });
   };
@@ -439,7 +441,7 @@ export default function PlanningDetailPage() {
               <input 
                 type="text" 
                 value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
+                onChange={(e) => setEditTitle(sanitizeInput(e.target.value, true))}
                 className="glass-input flex-1 font-bold text-lg"
               />
             </div>
@@ -469,9 +471,9 @@ export default function PlanningDetailPage() {
             >
               <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">{label}</p>
               {isEditing && isEditPeriodo ? (
-                <input type="text" value={editPeriodo} onChange={e => setEditPeriodo(e.target.value)} className="glass-input w-full text-sm" />
+                <input type="text" value={editPeriodo} onChange={e => setEditPeriodo(sanitizeInput(e.target.value, true))} className="glass-input w-full text-sm" />
               ) : isEditing && isEditProblematica ? (
-                <textarea value={editProblematica} onChange={e => setEditProblematica(e.target.value)} className="glass-input w-full text-sm min-h-[60px]" />
+                <textarea value={editProblematica} onChange={e => setEditProblematica(sanitizeInput(e.target.value, true))} className="glass-input w-full text-sm min-h-[60px]" />
               ) : (
                 <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{value}</p>
               )}
@@ -484,7 +486,7 @@ export default function PlanningDetailPage() {
           <div className="mt-3 p-3 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 print:border-gray-300 print:bg-blue-50 print:rounded">
             <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">PROPÓSITO / JUSTIFICACIÓN</p>
             {isEditing ? (
-              <textarea value={editProposito} onChange={e => setEditProposito(e.target.value)} className="glass-input w-full text-sm min-h-[80px]" />
+              <textarea value={editProposito} onChange={e => setEditProposito(sanitizeInput(e.target.value, true))} className="glass-input w-full text-sm min-h-[80px]" />
             ) : (
               <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.proposito}</p>
             )}
@@ -496,7 +498,7 @@ export default function PlanningDetailPage() {
           <div className="mt-3 p-3 rounded-xl bg-[var(--bg-surface)]/50 border border-[var(--border-glass)] print:border-gray-200">
             <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">INSTRUMENTO DE EVALUACIÓN</p>
             {isEditing ? (
-              <input type="text" value={editInstrumentos} onChange={e => setEditInstrumentos(e.target.value)} className="glass-input w-full text-sm" placeholder="Ej. Rúbrica, Lista de cotejo" />
+              <input type="text" value={editInstrumentos} onChange={e => setEditInstrumentos(sanitizeInput(e.target.value, true))} className="glass-input w-full text-sm" placeholder="Ej. Rúbrica, Lista de cotejo" />
             ) : (
               <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.instrumentoEvaluacion?.join(", ")}</p>
             )}
@@ -569,7 +571,7 @@ export default function PlanningDetailPage() {
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 print:text-gray-500">ACTIVIDADES PMC</p>
                   {isEditing ? (
-                    <textarea value={editPmc} onChange={e => setEditPmc(e.target.value)} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada actividad en una nueva línea" />
+                    <textarea value={editPmc} onChange={e => setEditPmc(sanitizeInput(e.target.value, false))} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada actividad en una nueva línea" />
                   ) : (
                     <ul className="space-y-1">
                       {planning.actividadesPmc?.map((pmc, i) => (
@@ -586,7 +588,7 @@ export default function PlanningDetailPage() {
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 print:text-gray-500">AJUSTES RAZONABLES</p>
                   {isEditing ? (
-                    <textarea value={editAjustes} onChange={e => setEditAjustes(e.target.value)} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada ajuste en una nueva línea" />
+                    <textarea value={editAjustes} onChange={e => setEditAjustes(sanitizeInput(e.target.value, false))} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada ajuste en una nueva línea" />
                   ) : (
                     <ul className="space-y-1">
                       {planning.ajustesRazonables?.map((aj, i) => (
