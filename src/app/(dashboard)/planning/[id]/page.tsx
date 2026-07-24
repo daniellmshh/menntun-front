@@ -214,11 +214,11 @@ export default function PlanningDetailPage() {
             return (
               <div key={i} className="flex items-start gap-1.5">
                 <span className="text-[var(--text-muted)] print:text-gray-500 mt-0.5">•</span>
-                <span>{line.replace(/^- /, '')}</span>
+                <span dangerouslySetInnerHTML={{ __html: line.replace(/^- /, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
               </div>
             );
           }
-          return <p key={i}>{line}</p>;
+          return <p key={i} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />;
         })}
       </div>
     );
