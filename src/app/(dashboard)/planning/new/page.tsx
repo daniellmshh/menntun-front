@@ -146,6 +146,14 @@ export default function NewPlanningPage() {
     loadData();
   }, []);
 
+  // Reset selected fields when the grade changes to prevent inconsistencies
+  useEffect(() => {
+    setCamposSeleccionados([]);
+    setAddingCampoId("");
+    setAddingContenidoId("");
+    setAddingPdaLiteral("");
+  }, [standaloneGradeOrder, selectedGroupId, isStandalone]);
+
   // ─── Campo+contenido helpers ───────────────────────────────────────────────
 
   const handleAddCampo = () => {
