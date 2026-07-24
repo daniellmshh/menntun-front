@@ -14,6 +14,8 @@ import {
   X,
   Trash2,
   Printer,
+  Plus,
+  RefreshCw,
   GraduationCap,
   Target,
   Users,
@@ -104,6 +106,17 @@ export default function PlanningDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [collapsedMomentos, setCollapsedMomentos] = useState<Record<number, boolean>>({});
 
+  // Edit Mode States
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPeriodo, setEditPeriodo] = useState("");
+  const [editProblematica, setEditProblematica] = useState("");
+  const [editProposito, setEditProposito] = useState("");
+  const [editInstrumentos, setEditInstrumentos] = useState(""); 
+  const [editPmc, setEditPmc] = useState(""); 
+  const [editAjustes, setEditAjustes] = useState("");
+  const [editMatriz, setEditMatriz] = useState<MatrizMomento[]>([]);
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -118,6 +131,74 @@ export default function PlanningDetailPage() {
     };
     load();
   }, [id]);
+
+  const handleEdit = () => {
+    if (!planning) return;
+    setEditTitle(planning.title || "");
+    setEditPeriodo(planning.periodoProyecto || "");
+    setEditProblematica(planning.problematica || "");
+    setEditProposito(planning.proposito || "");
+    setEditInstrumentos((planning.instrumentoEvaluacion || []).join(", "));
+    setEditPmc((planning.actividadesPmc || []).join("\n"));
+    setEditAjustes((planning.ajustesRazonables || []).join("\n"));
+    setEditMatriz(planning.matrizDidactica ? JSON.parse(JSON.stringify(planning.matrizDidactica)) : []);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!planning) return;
+    setSaving(true);
+    try {
+      const dto = {
+        title: editTitle,
+        periodoProyecto: editPeriodo,
+        problematica: editProblematica,
+        proposito: editProposito,
+        instrumentoEvaluacion: editInstrumentos.split(",").map(s => s.trim()).filter(s => s),
+        actividadesPmc: editPmc.split("\n").map(s => s.trim()).filter(s => s),
+        ajustesRazonables: editAjustes.split("\n").map(s => s.trim()).filter(s => s),
+        matrizDidactica: editMatriz,
+      };
+      const res = await updatePlanning(id, dto);
+      if (res.data) {
+        setPlanning(res.data);
+        setMessage("Planeación actualizada correctamente.");
+        setIsEditing(false);
+      }
+    } catch {
+      setError("Error al guardar los cambios.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMatrizChange = (mIdx: number, fIdx: number, field: string, value: string) => {
+    setEditMatriz(prev => {
+      const nw = [...prev];
+      nw[mIdx].filas[fIdx] = { ...nw[mIdx].filas[fIdx], [field]: value };
+      return nw;
+    });
+  };
+
+  const handleAddFila = (mIdx: number) => {
+    setEditMatriz(prev => {
+      const nw = [...prev];
+      nw[mIdx].filas.push({ actividades: "", campo_pda: "", organizacion: "", recursos: "", evaluacion: "" });
+      return nw;
+    });
+  };
+
+  const handleRemoveFila = (mIdx: number, fIdx: number) => {
+    setEditMatriz(prev => {
+      const nw = [...prev];
+      nw[mIdx].filas.splice(fIdx, 1);
+      return nw;
+    });
+  };
 
   const handleDelete = async () => {
     if (!confirmDelete) { setConfirmDelete(true); return; }
@@ -281,7 +362,25 @@ export default function PlanningDetailPage() {
           </Link>
         </div>
         <div className="flex items-center gap-3 print:hidden">
-          <StatusBadge status={planning.status} />
+          {isEditing ? (
+            <>
+              <button onClick={handleCancelEdit} disabled={saving} className="glass-button-secondary flex items-center gap-2 text-sm">
+                <X size={16} /> Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={saving} className="glass-button flex items-center gap-2 text-sm bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)]">
+                {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />} 
+                {saving ? "Guardando..." : "Guardar Cambios"}
+              </button>
+            </>
+          ) : (
+            <>
+              <StatusBadge status={planning.status} />
+              <button
+                onClick={handleEdit}
+                className="glass-button-secondary flex items-center gap-2 text-sm"
+              >
+                <Edit2 size={16} /> Editar
+              </button>
           <button
             onClick={handleExportHtml}
             disabled={exporting}
@@ -312,6 +411,8 @@ export default function PlanningDetailPage() {
             <Trash2 size={16} />
             {confirmDelete ? "¿Confirmar?" : "Eliminar"}
           </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -332,46 +433,73 @@ export default function PlanningDetailPage() {
       <div className="glass-panel p-6 mb-6 print:border print:border-gray-300 print:shadow-none print:bg-white print:rounded-none">
         <div className="flex items-center gap-2 mb-4 print:mb-3">
           <div className="w-1 h-6 bg-[var(--accent-primary)] rounded-full print:hidden" />
-          <h2 className="text-lg font-bold text-[var(--text-primary)] print:text-black print:text-base">
-            PLANEACIÓN DIDÁCTICA — {planning.title?.toUpperCase()}
-          </h2>
+          {isEditing ? (
+            <div className="flex-1 flex items-center gap-2">
+              <span className="text-lg font-bold text-[var(--text-primary)]">PLANEACIÓN DIDÁCTICA — </span>
+              <input 
+                type="text" 
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="glass-input flex-1 font-bold text-lg"
+              />
+            </div>
+          ) : (
+            <h2 className="text-lg font-bold text-[var(--text-primary)] print:text-black print:text-base">
+              PLANEACIÓN DIDÁCTICA — {planning.title?.toUpperCase()}
+            </h2>
+          )}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 print:gap-2">
           {[
             { label: "MAESTRA", value: teacherName },
             { label: "GRADO / GRUPO", value: groupLabel },
-            { label: "PERIODO", value: planning.startDate && planning.endDate ? `Del ${new Date(planning.startDate).toISOString().split('T')[0]} al ${new Date(planning.endDate).toISOString().split('T')[0]}` : planning.periodoProyecto || "—" },
+            { label: "PERIODO", value: planning.startDate && planning.endDate ? `Del ${new Date(planning.startDate).toISOString().split('T')[0]} al ${new Date(planning.endDate).toISOString().split('T')[0]}` : planning.periodoProyecto || "—", isEditPeriodo: true },
             { label: "MODALIDAD", value: PlanningModalidadLabels[planning.modalidad] || planning.modalidad },
             {
               label: "PROBLEMÁTICA",
               value: planning.problematica || "—",
               span: true,
+              isEditProblematica: true,
             },
-          ].map(({ label, value, span }) => (
+          ].map(({ label, value, span, isEditPeriodo, isEditProblematica }) => (
             <div
               key={label}
               className={`p-3 rounded-xl bg-[var(--bg-surface)]/50 border border-[var(--border-glass)] print:border-gray-200 print:bg-gray-50 print:rounded ${span ? "col-span-2 md:col-span-3" : ""}`}
             >
               <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">{label}</p>
-              <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{value}</p>
+              {isEditing && isEditPeriodo ? (
+                <input type="text" value={editPeriodo} onChange={e => setEditPeriodo(e.target.value)} className="glass-input w-full text-sm" />
+              ) : isEditing && isEditProblematica ? (
+                <textarea value={editProblematica} onChange={e => setEditProblematica(e.target.value)} className="glass-input w-full text-sm min-h-[60px]" />
+              ) : (
+                <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{value}</p>
+              )}
             </div>
           ))}
         </div>
 
         {/* Propósito */}
-        {planning.proposito && (
+        {(planning.proposito || isEditing) && (
           <div className="mt-3 p-3 rounded-xl bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 print:border-gray-300 print:bg-blue-50 print:rounded">
             <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">PROPÓSITO / JUSTIFICACIÓN</p>
-            <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.proposito}</p>
+            {isEditing ? (
+              <textarea value={editProposito} onChange={e => setEditProposito(e.target.value)} className="glass-input w-full text-sm min-h-[80px]" />
+            ) : (
+              <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.proposito}</p>
+            )}
           </div>
         )}
 
         {/* Instrumento de evaluación */}
-        {planning.instrumentoEvaluacion && planning.instrumentoEvaluacion.length > 0 && (
+        {((planning.instrumentoEvaluacion && planning.instrumentoEvaluacion.length > 0) || isEditing) && (
           <div className="mt-3 p-3 rounded-xl bg-[var(--bg-surface)]/50 border border-[var(--border-glass)] print:border-gray-200">
             <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1 print:text-gray-500">INSTRUMENTO DE EVALUACIÓN</p>
-            <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.instrumentoEvaluacion.join(", ")}</p>
+            {isEditing ? (
+              <input type="text" value={editInstrumentos} onChange={e => setEditInstrumentos(e.target.value)} className="glass-input w-full text-sm" placeholder="Ej. Rúbrica, Lista de cotejo" />
+            ) : (
+              <p className="text-sm text-[var(--text-primary)] print:text-gray-800">{planning.instrumentoEvaluacion?.join(", ")}</p>
+            )}
           </div>
         )}
       </div>
@@ -435,34 +563,42 @@ export default function PlanningDetailPage() {
           )}
 
           {/* PMC y Ajustes */}
-          {(planning.actividadesPmc?.length || planning.ajustesRazonables?.length) ? (
+          {(planning.actividadesPmc?.length || planning.ajustesRazonables?.length || isEditing) ? (
             <div className="mt-4 pt-4 border-t border-[var(--border-glass)] print:border-gray-300 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {planning.actividadesPmc && planning.actividadesPmc.length > 0 && (
+              {((planning.actividadesPmc && planning.actividadesPmc.length > 0) || isEditing) ? (
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 print:text-gray-500">ACTIVIDADES PMC</p>
-                  <ul className="space-y-1">
-                    {planning.actividadesPmc.map((pmc, i) => (
-                      <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
-                        <span className="text-[var(--accent-primary)] mt-0.5 print:text-gray-600">•</span>
-                        {pmc}
-                      </li>
-                    ))}
-                  </ul>
+                  {isEditing ? (
+                    <textarea value={editPmc} onChange={e => setEditPmc(e.target.value)} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada actividad en una nueva línea" />
+                  ) : (
+                    <ul className="space-y-1">
+                      {planning.actividadesPmc?.map((pmc, i) => (
+                        <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
+                          <span className="text-[var(--accent-primary)] mt-0.5 print:text-gray-600">•</span>
+                          {pmc}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              )}
-              {planning.ajustesRazonables && planning.ajustesRazonables.length > 0 && (
+              ) : null}
+              {((planning.ajustesRazonables && planning.ajustesRazonables.length > 0) || isEditing) ? (
                 <div>
                   <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-2 print:text-gray-500">AJUSTES RAZONABLES</p>
-                  <ul className="space-y-1">
-                    {planning.ajustesRazonables.map((aj, i) => (
-                      <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
-                        <span className="text-[var(--accent-warning)] mt-0.5 print:text-gray-600">•</span>
-                        {aj}
-                      </li>
-                    ))}
-                  </ul>
+                  {isEditing ? (
+                    <textarea value={editAjustes} onChange={e => setEditAjustes(e.target.value)} className="glass-input w-full text-sm min-h-[100px]" placeholder="Escribe cada ajuste en una nueva línea" />
+                  ) : (
+                    <ul className="space-y-1">
+                      {planning.ajustesRazonables?.map((aj, i) => (
+                        <li key={i} className="text-xs text-[var(--text-secondary)] print:text-gray-700 flex items-start gap-2">
+                          <span className="text-[var(--accent-warning)] mt-0.5 print:text-gray-600">•</span>
+                          {aj}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -519,31 +655,61 @@ export default function PlanningDetailPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {momento.filas.map((fila, fIdx) => (
+                      {(isEditing ? editMatriz[mIdx].filas : momento.filas).map((fila, fIdx) => (
                         <tr
                           key={fIdx}
-                          className="border-b border-[var(--border-glass)]/40 hover:bg-[var(--bg-panel)] transition-colors align-top print:border-gray-200"
+                          className="border-b border-[var(--border-glass)]/40 hover:bg-[var(--bg-panel)] transition-colors align-top print:border-gray-200 group"
                         >
-                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
-                            {renderActividades(fila.actividades)}
+                          <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px] relative">
+                            {isEditing && (
+                              <button onClick={() => handleRemoveFila(mIdx, fIdx)} className="absolute -left-1 top-3 p-1 rounded-md text-[var(--accent-danger)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--accent-danger)]/10" title="Eliminar fila">
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                            {isEditing ? (
+                              <textarea value={fila.actividades} onChange={e => handleMatrizChange(mIdx, fIdx, "actividades", e.target.value)} className="glass-input w-full text-[11px] min-h-[120px]" />
+                            ) : renderActividades(fila.actividades)}
                           </td>
                           <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed">
-                            {renderCampoPda(fila.campo_pda)}
+                            {isEditing ? (
+                              <textarea value={fila.campo_pda} onChange={e => handleMatrizChange(mIdx, fIdx, "campo_pda", e.target.value)} className="glass-input w-full text-[11px] min-h-[120px]" />
+                            ) : renderCampoPda(fila.campo_pda)}
                           </td>
                           <td className="py-3 px-3 text-center align-top">
-                            <span className="px-2 py-1 rounded-full text-[10px] bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-primary)] print:border-gray-300 print:text-gray-700">
-                              {fila.organizacion}
-                            </span>
+                            {isEditing ? (
+                              <input type="text" value={fila.organizacion} onChange={e => handleMatrizChange(mIdx, fIdx, "organizacion", e.target.value)} className="glass-input w-full text-center text-[10px]" />
+                            ) : (
+                              <span className="px-2 py-1 rounded-full text-[10px] bg-[var(--bg-surface)] border border-[var(--border-glass)] text-[var(--text-primary)] print:border-gray-300 print:text-gray-700">
+                                {fila.organizacion}
+                              </span>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
-                            <div className="whitespace-pre-wrap">{fila.recursos}</div>
+                            {isEditing ? (
+                              <textarea value={fila.recursos} onChange={e => handleMatrizChange(mIdx, fIdx, "recursos", e.target.value)} className="glass-input w-full text-[11px] min-h-[80px]" />
+                            ) : (
+                              <div className="whitespace-pre-wrap">{fila.recursos}</div>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-[var(--text-secondary)] print:text-gray-800 leading-relaxed text-[11px]">
-                            {fila.evaluacion}
+                            {isEditing ? (
+                              <textarea value={fila.evaluacion} onChange={e => handleMatrizChange(mIdx, fIdx, "evaluacion", e.target.value)} className="glass-input w-full text-[11px] min-h-[80px]" />
+                            ) : fila.evaluacion}
                           </td>
                         </tr>
                       ))}
                     </tbody>
+                    {isEditing && (
+                      <tfoot>
+                        <tr>
+                          <td colSpan={5} className="pt-2">
+                            <button onClick={() => handleAddFila(mIdx)} className="glass-button-secondary w-full flex items-center justify-center gap-2 py-2 text-xs border-dashed border-[var(--border-glass)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)]/50">
+                              <Plus size={14} /> Agregar Actividad / Fila
+                            </button>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </div>
