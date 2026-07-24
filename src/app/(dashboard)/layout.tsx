@@ -161,7 +161,7 @@ export default function DashboardLayout({
     : "JD";
   const userFullName = user ? `${user.firstName} ${user.lastName}` : "John Doe";
   const userRoleDisplay = user
-    ? (user.role === UserRole.SUPER_ADMIN ? t.header.roleLabel : user.role)
+    ? (user.role === UserRole.SUPER_ADMIN ? t.header.roleLabel : user.role.replace(/_/g, ' '))
     : "School Admin";
 
   const mockNotifications = [
@@ -232,7 +232,7 @@ export default function DashboardLayout({
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[var(--border-glass)] bg-black/10">
               <span className="w-2 h-2 rounded-full bg-[var(--accent-secondary)] animate-pulse" />
               <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wider uppercase">
-                {user ? user.schoolId : t.header.schoolLabel}
+                {user ? (user.schoolName || user.schoolId) : t.header.schoolLabel}
               </span>
             </div>
 
