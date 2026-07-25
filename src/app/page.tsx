@@ -335,7 +335,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1 group"
                     >
-                      <FacebookIcon className="w-8 h-8 text-[var(--accent-secondary)] dark:text-white transition-all" />
+                      <FacebookIcon className="w-8 h-8 text-[var(--text-primary)] transition-colors" />
                     </a>
                     <a 
                       href="https://www.instagram.com/menntun.mx/"
@@ -343,7 +343,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1 group"
                     >
-                      <InstagramIcon className="w-8 h-8 text-[var(--accent-secondary)] dark:text-white transition-all" />
+                      <InstagramIcon className="w-8 h-8 text-[var(--text-primary)] transition-colors" />
                     </a>
                   </div>
                 </div>
