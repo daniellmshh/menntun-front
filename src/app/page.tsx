@@ -14,6 +14,7 @@ import {
   Sparkles,
   Send
 } from "lucide-react";
+import { FacebookIcon, InstagramIcon, WhatsAppIcon } from "@/components/ui/SocialIcons";
 import LandingNavbar from "@/components/ui/LandingNavbar";
 import { FadeUp, FadeLeft, FadeRight, StaggerContainer } from "@/components/ui/MotionWrappers";
 
@@ -321,7 +322,7 @@ export default function LandingPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-light)] text-white px-8 py-4 rounded-2xl shadow-glow transition-all transform hover:-translate-y-1 w-full sm:w-max font-bold text-lg"
                 >
-                  <Image src="/images/whatsapp-icon.svg" width={28} height={28} alt="WhatsApp" className="filter brightness-0 invert w-7 h-7" unoptimized />
+                  <WhatsAppIcon className="w-7 h-7" />
                   Chatear por WhatsApp
                 </a>
 
@@ -334,7 +335,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1 group"
                     >
-                      <Image src="/images/facebook-icon.svg" width={32} height={32} alt="Facebook" className="w-8 h-8 dark:brightness-0 dark:invert transition-all" unoptimized />
+                      <FacebookIcon className="w-8 h-8 text-[var(--accent-secondary)] dark:text-white transition-all" />
                     </a>
                     <a 
                       href="https://www.instagram.com/menntun.mx/"
@@ -342,7 +343,7 @@ export default function LandingPage() {
                       rel="noopener noreferrer"
                       className="flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--accent-secondary)]/10 hover:bg-[var(--accent-secondary)]/20 border border-[var(--accent-secondary)]/30 transition-all transform hover:-translate-y-1 group"
                     >
-                      <Image src="/images/instagram-icon.svg" width={32} height={32} alt="Instagram" className="w-8 h-8 dark:brightness-0 dark:invert transition-all" unoptimized />
+                      <InstagramIcon className="w-8 h-8 text-[var(--accent-secondary)] dark:text-white transition-all" />
                     </a>
                   </div>
                 </div>
