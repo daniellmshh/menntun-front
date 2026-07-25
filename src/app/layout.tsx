@@ -28,13 +28,13 @@ export default function RootLayout({
                 let theme = localStorage.getItem('menntun-theme-storage');
                 if (theme) {
                   theme = JSON.parse(theme).state.theme;
-                  if (theme === 'light') {
-                    document.documentElement.classList.add('light');
-                  } else {
+                  if (theme === 'dark') {
                     document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.add('light');
                   }
                 } else {
-                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.add('light');
                 }
               } catch (e) {}
             `,

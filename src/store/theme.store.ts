@@ -12,7 +12,7 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
-      theme: "dark", // Default to dark theme as per original design
+      theme: "light", // Default to light theme as per request
       setTheme: (theme) => {
         set({ theme });
         // Also update the document class immediately when changed

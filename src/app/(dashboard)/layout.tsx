@@ -153,7 +153,7 @@ export default function DashboardLayout({
     await supabase.auth.signOut();
     queryClient.removeQueries({ queryKey: ACTIVE_MODULES_QUERY_KEY });
     clear();
-    router.push("/login");
+    router.push("/");
   };
 
   const userInitials = user
