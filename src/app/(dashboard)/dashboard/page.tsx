@@ -8,6 +8,7 @@ import IndependentDashboard from "./components/IndependentDashboard";
 import SchoolAdminDashboard from "./components/SchoolAdminDashboard";
 import TeacherDashboard from "./components/TeacherDashboard";
 import SuperAdminDashboard from "./components/SuperAdminDashboard";
+import OrgAdminDashboard from "./components/OrgAdminDashboard";
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuthStore();
@@ -19,6 +20,11 @@ export default function DashboardPage() {
   // SUPER_ADMIN
   if (user.role === UserRole.SUPER_ADMIN) {
     return <SuperAdminDashboard userName={firstName} />;
+  }
+
+  // ORG_ADMIN
+  if (user.role === UserRole.ORG_ADMIN) {
+    return <OrgAdminDashboard />;
   }
 
   // SCHOOL_ADMIN — independent workspace

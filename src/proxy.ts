@@ -41,6 +41,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  const role = user?.user_metadata?.role;
+  const isOrgAdmin = role === "ORG_ADMIN";
+  const activeSchoolId = request.cookies.get("menntun-active-school")?.value;
+  const isSelectCampusPage = request.nextUrl.pathname === "/select-campus";
+
+  if (user && isOrgAdmin && !activeSchoolId && !isSelectCampusPage && !isPublicRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/select-campus";
+    return NextResponse.redirect(url);
+  }
+
   if (user && isLoginPage) {
     // Redirect authenticated users away from login
     const url = request.nextUrl.clone();
