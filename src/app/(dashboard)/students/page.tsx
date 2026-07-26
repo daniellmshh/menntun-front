@@ -211,7 +211,7 @@ export default function StudentsPage() {
     setStudentFirstName("");
     setStudentLastName("");
     setStudentPhone("");
-    setStudentSchoolId(user?.role === UserRole.SCHOOL_ADMIN ? user.schoolId : "");
+    setStudentSchoolId(user?.role === UserRole.SCHOOL_ADMIN ? (user.schoolId || "") : "");
     setStudentEnrollmentNumber("");
     setStudentBirthDate("");
     setStudentGender("");

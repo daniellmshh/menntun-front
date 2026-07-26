@@ -1,5 +1,6 @@
 export enum UserRole {
   SUPER_ADMIN = "SUPER_ADMIN",
+  ORG_ADMIN = "ORG_ADMIN",
   SCHOOL_ADMIN = "SCHOOL_ADMIN",
   TEACHER = "TEACHER",
   STUDENT = "STUDENT",
@@ -12,7 +13,10 @@ export interface RequestUser {
   supabaseUid: string;
   email: string;
   role: UserRole;
-  schoolId: string;
+  schoolId?: string | null;
+  organizationId?: string | null;
+  activeSchoolId?: string | null;
+  organizationSchools?: { id: string; name: string; code: string }[];
   schoolName?: string;
   firstName: string;
   lastName: string;
