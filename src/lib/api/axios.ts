@@ -18,6 +18,14 @@ api.interceptors.request.use(
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
     }
+
+    if (typeof document !== "undefined") {
+      const match = document.cookie.match(new RegExp('(^| )menntun-active-school=([^;]+)'));
+      if (match) {
+        config.headers["X-Active-School-Id"] = match[2];
+      }
+    }
+
     return config;
   },
   (error) => {

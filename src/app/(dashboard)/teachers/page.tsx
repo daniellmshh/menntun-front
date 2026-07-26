@@ -217,7 +217,7 @@ export default function TeachersPage() {
     setTeacherFirstName("");
     setTeacherLastName("");
     setTeacherPhone("");
-    setTeacherSchoolId(user?.role === UserRole.SCHOOL_ADMIN ? user.schoolId : "");
+    setTeacherSchoolId(user?.role === UserRole.SCHOOL_ADMIN ? (user.schoolId || "") : "");
     setTeacherEmpNumber("");
     setTeacherSpecialty("");
     setTeacherHireDate("");
