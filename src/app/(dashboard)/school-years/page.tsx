@@ -587,6 +587,8 @@ export default function SchoolYearsPage() {
   const [editYear, setEditYear] = useState<SchoolYear | null>(null);
   const [detailYear, setDetailYear] = useState<SchoolYear | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [yearToDelete, setYearToDelete] = useState<SchoolYear | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const showAlert = useCallback((msg: string, type: "success" | "error") => {
@@ -620,14 +622,18 @@ export default function SchoolYearsPage() {
     fetchSchools();
   }, [fetchYears, fetchSchools]);
 
-  const handleDelete = async (year: SchoolYear) => {
-    if (!confirm(t.detail.deleteYearConfirm)) return;
+  const confirmDelete = async () => {
+    if (!yearToDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/academic/school-years/${year.id}`);
-      setYears((prev) => prev.filter((y) => y.id !== year.id));
+      await api.delete(`/academic/school-years/${yearToDelete.id}`);
+      setYears((prev) => prev.filter((y) => y.id !== yearToDelete.id));
       showAlert(t.alerts.successDelete, "success");
+      setYearToDelete(null);
     } catch (e: any) {
       showAlert(e?.response?.data?.error || t.alerts.errorDelete, "error");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -837,7 +843,7 @@ export default function SchoolYearsPage() {
                                 {(year._count?.groups ?? 0) === 0 && (
                                   <button
                                     id={`delete-year-${year.id}`}
-                                    onClick={() => handleDelete(year)}
+                                    onClick={() => setYearToDelete(year)}
                                     title="Eliminar"
                                     className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--accent-danger)] hover:bg-[hsla(354,85%,56%,0.1)] transition-all"
                                   >
