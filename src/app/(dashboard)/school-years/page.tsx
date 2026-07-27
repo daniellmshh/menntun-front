@@ -834,7 +834,7 @@ export default function SchoolYearsPage() {
                                 >
                                   <Edit2 size={15} />
                                 </button>
-                                {!year.active && (year._count?.groups ?? 0) === 0 && (
+                                {(year._count?.groups ?? 0) === 0 && (
                                   <button
                                     id={`delete-year-${year.id}`}
                                     onClick={() => handleDelete(year)}
@@ -853,7 +853,7 @@ export default function SchoolYearsPage() {
                       {/* Expanded periods row */}
                       {isExpanded && sortedPeriods.length > 0 && (
                         <tr>
-                          <td colSpan={isSuperAdmin ? 8 : 7} className="px-8 py-3 bg-[hsla(240,16%,6%,0.5)] border-b border-[var(--border-glass)]">
+                          <td colSpan={isSuperAdmin ? 8 : 7} className="px-8 py-3 bg-[var(--bg-panel)] border-b border-[var(--border-glass)]">
                             <div className="flex flex-wrap gap-2">
                               {sortedPeriods.map((p) => (
                                 <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[hsla(263,90%,60%,0.08)] border border-[hsla(263,90%,60%,0.15)]">
