@@ -179,7 +179,7 @@ function GradeModal({
               <select
                 value={form.schoolId}
                 onChange={(e) => setForm({ ...form, schoolId: e.target.value })}
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
               >
                 <option value="">— Sin asignar (usar mi escuela) —</option>
                 {schools.map((s) => (
@@ -200,7 +200,7 @@ function GradeModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej. 1° Primaria, 3° Secundaria"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
 
@@ -211,7 +211,7 @@ function GradeModal({
             <select
               value={selectedLevelType}
               onChange={(e) => setSelectedLevelType(e.target.value)}
-              className="w-full input-glass text-sm text-[var(--text-primary)] bg-black/60"
+              className="w-full glass-input text-sm"
             >
               <option value="">{t.modal.levelPlaceholder}</option>
               <option value="PREESCOLAR">{t.modal.levelSelectOptions.preschool}</option>
@@ -229,7 +229,7 @@ function GradeModal({
               min={1}
               value={form.order}
               onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 1 })}
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
         </div>
@@ -383,7 +383,7 @@ export default function GradesCatalogPage() {
             placeholder="Buscar por nombre, nivel..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 input-glass"
+            className="w-full !pl-10 glass-input"
           />
         </div>
 
@@ -394,7 +394,7 @@ export default function GradesCatalogPage() {
             <select
               value={filterSchoolId}
               onChange={(e) => setFilterSchoolId(e.target.value)}
-              className="input-glass text-sm max-w-xs"
+              className="glass-input text-sm max-w-xs"
             >
               <option value="">Todos los colegios</option>
               {schools.map((s) => (
