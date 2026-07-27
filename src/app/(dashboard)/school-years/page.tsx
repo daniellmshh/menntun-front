@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Clock,
   Layers,
+  Loader2,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
@@ -118,11 +119,13 @@ function AlertBanner({
 function PeriodRow({
   period,
   canManage,
+  isDeleting,
   onDelete,
   t,
 }: {
   period: Period;
   canManage: boolean;
+  isDeleting?: boolean;
   onDelete: (id: string) => void;
   t: any;
 }) {
@@ -138,10 +141,15 @@ function PeriodRow({
       {canManage && (
         <button
           onClick={() => onDelete(period.id)}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-[var(--accent-danger)] transition-all"
+          disabled={isDeleting}
+          className={`p-1 rounded transition-all ${
+            isDeleting 
+              ? "opacity-100 text-[var(--text-secondary)]" 
+              : "opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-[var(--accent-danger)]"
+          }`}
           title={t.modal.removePeriod}
         >
-          <Trash2 size={13} />
+          {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
         </button>
       )}
     </div>
@@ -166,8 +174,9 @@ function SchoolYearDetail({
   const [showAddPeriod, setShowAddPeriod] = useState(false);
   const [periodForm, setPeriodForm] = useState({ name: "", startDate: "", endDate: "", order: 1 });
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [alert, setAlert] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [deletingPeriodId, setDeletingPeriodId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const showAlert = (msg: string, type: "success" | "error") => {
@@ -194,7 +203,7 @@ function SchoolYearDetail({
   };
 
   const handleDeletePeriod = async (periodId: string) => {
-    setLoading(true);
+    setDeletingPeriodId(periodId);
     try {
       await api.delete(`/academic/school-years/${year.id}/periods/${periodId}`);
       const res = await api.get<ApiResponse<SchoolYear>>(`/academic/school-years/${year.id}`);
@@ -203,7 +212,7 @@ function SchoolYearDetail({
     } catch {
       showAlert(t.alerts.errorDeletePeriod, "error");
     } finally {
-      setLoading(false);
+      setDeletingPeriodId(null);
     }
   };
 
@@ -341,7 +350,14 @@ function SchoolYearDetail({
                 <p className="text-sm text-[var(--text-muted)] italic">{t.detail.noPeriods}</p>
               ) : (
                 sortedPeriods.map((p) => (
-                  <PeriodRow key={p.id} period={p} canManage={canManage && year.active} onDelete={handleDeletePeriod} t={t} />
+                  <PeriodRow 
+                    key={p.id} 
+                    period={p} 
+                    canManage={canManage && year.active} 
+                    isDeleting={deletingPeriodId === p.id}
+                    onDelete={handleDeletePeriod} 
+                    t={t} 
+                  />
                 ))
               )}
             </div>
