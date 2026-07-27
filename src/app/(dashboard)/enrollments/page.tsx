@@ -148,7 +148,7 @@ export default function EnrollmentsPage() {
               {user?.role === "SCHOOL_ADMIN" && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="btn-primary"
+                  className="glass-button"
                 >
                   <Plus size={20} />
                   Nueva Solicitud
@@ -168,7 +168,7 @@ export default function EnrollmentsPage() {
                     placeholder="Buscar aspirante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input-glass w-full pl-10"
+                    className="w-full !pl-10 glass-input"
                   />
                 </div>
               </div>
@@ -295,7 +295,7 @@ export default function EnrollmentsPage() {
                         </label>
                         <input
                           required
-                          className="input-glass w-full text-sm"
+                          className="glass-input w-full text-sm"
                           value={createForm.firstName}
                           onChange={(e) =>
                             setCreateForm({
@@ -311,7 +311,7 @@ export default function EnrollmentsPage() {
                         </label>
                         <input
                           required
-                          className="input-glass w-full text-sm"
+                          className="glass-input w-full text-sm"
                           value={createForm.lastName}
                           onChange={(e) =>
                             setCreateForm({
@@ -334,7 +334,7 @@ export default function EnrollmentsPage() {
                         </label>
                         <input
                           required
-                          className="input-glass w-full text-sm"
+                          className="glass-input w-full text-sm"
                           value={createForm.parentFirstName}
                           onChange={(e) =>
                             setCreateForm({
@@ -350,7 +350,7 @@ export default function EnrollmentsPage() {
                         </label>
                         <input
                           required
-                          className="input-glass w-full text-sm"
+                          className="glass-input w-full text-sm"
                           value={createForm.parentLastName}
                           onChange={(e) =>
                             setCreateForm({
@@ -367,7 +367,7 @@ export default function EnrollmentsPage() {
                         <input
                           type="email"
                           required
-                          className="input-glass w-full text-sm"
+                          className="glass-input w-full text-sm"
                           value={createForm.parentEmail}
                           onChange={(e) =>
                             setCreateForm({
@@ -384,11 +384,11 @@ export default function EnrollmentsPage() {
               <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
                 <button
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="btn-secondary"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm"
                 >
                   Cancelar
                 </button>
-                <button form="createForm" type="submit" className="btn-primary">
+                <button form="createForm" type="submit" className="glass-button">
                   Generar Solicitud
                 </button>
               </div>
@@ -461,7 +461,7 @@ export default function EnrollmentsPage() {
               <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
                 <button
                   onClick={() => setIsDetailModalOpen(false)}
-                  className="btn-secondary"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm"
                 >
                   Cerrar
                 </button>

@@ -229,7 +229,7 @@ function GroupModal({
                 onChange={(e) =>
                   setForm({ ...form, schoolId: e.target.value, gradeId: "", schoolYearId: "" })
                 }
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
               >
                 <option value="">— Sin asignar (usar mi escuela) —</option>
                 {schools.map((s) => (
@@ -248,7 +248,7 @@ function GroupModal({
             <select
               value={form.gradeId}
               onChange={(e) => setForm({ ...form, gradeId: e.target.value })}
-              className="w-full input-glass text-sm"
+              className="w-full glass-input text-sm"
               disabled={isSuperAdmin && !form.schoolId}
             >
               <option value="">Selecciona un grado</option>
@@ -273,7 +273,7 @@ function GroupModal({
               <select
                 value={form.schoolYearId}
                 onChange={(e) => setForm({ ...form, schoolYearId: e.target.value })}
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
                 disabled={isSuperAdmin && !form.schoolId}
               >
                 <option value="">Selecciona un ciclo escolar</option>
@@ -295,7 +295,7 @@ function GroupModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej. A, B, 101"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
 
@@ -309,17 +309,17 @@ function GroupModal({
               value={form.maxStudents}
               onChange={(e) => setForm({ ...form, maxStudents: e.target.value })}
               placeholder="Sin límite"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="btn-secondary">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm">
             {t.modal.cancel}
           </button>
-          <button onClick={handleSave} disabled={loading} className="btn-primary disabled:opacity-50">
+          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>
         </div>
@@ -529,7 +529,7 @@ function GroupDetailDrawer({
                     onChange={(e) =>
                       setAssignForm({ ...assignForm, teacherProfileId: e.target.value })
                     }
-                    className="input-glass text-sm w-full"
+                    className="glass-input text-sm w-full"
                     disabled={loading}
                   >
                     <option value="">{t.detail.teacherSelectLabel}</option>
@@ -554,7 +554,7 @@ function GroupDetailDrawer({
                 <button
                   onClick={handleAssignTeacher}
                   disabled={loading || !assignForm.teacherProfileId}
-                  className="btn-primary w-full text-xs py-2 disabled:opacity-50"
+                  className="glass-button w-full text-xs py-2 disabled:opacity-50"
                 >
                   {t.detail.assignBtn}
                 </button>
@@ -782,7 +782,7 @@ export default function GroupsPage() {
               setEditGroup(null);
               setShowModal(true);
             }}
-            className="btn-primary self-start md:self-auto flex items-center gap-2"
+            className="glass-button self-start md:self-auto flex items-center gap-2"
           >
             <Plus size={16} />
             {t.createBtn}
@@ -803,7 +803,7 @@ export default function GroupsPage() {
             placeholder="Buscar grupo, grado..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 input-glass text-sm"
+            className="w-full !pl-10 glass-input text-sm"
           />
         </div>
 
@@ -816,7 +816,7 @@ export default function GroupsPage() {
               setFilterGradeId("");
               setFilterYearId("");
             }}
-            className="input-glass text-sm"
+            className="glass-input text-sm"
           >
             <option value="">Colegios (Todos)</option>
             {schools.map((s) => (
@@ -831,7 +831,7 @@ export default function GroupsPage() {
         <select
           value={filterGradeId}
           onChange={(e) => setFilterGradeId(e.target.value)}
-          className="input-glass text-sm"
+          className="glass-input text-sm"
         >
           <option value="">Grados (Todos)</option>
           {displayGrades.map((g) => (
@@ -845,7 +845,7 @@ export default function GroupsPage() {
         <select
           value={filterYearId}
           onChange={(e) => setFilterYearId(e.target.value)}
-          className="input-glass text-sm"
+          className="glass-input text-sm"
         >
           <option value="">Ciclos Escolares (Todos)</option>
           {displayYears.map((y) => (

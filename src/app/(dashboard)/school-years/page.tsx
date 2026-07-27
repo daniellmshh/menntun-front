@@ -305,16 +305,16 @@ function SchoolYearDetail({
                       value={periodForm.name}
                       onChange={(e) => setPeriodForm({ ...periodForm, name: e.target.value })}
                       placeholder="Ej. Trimestre 1"
-                      className="w-full input-glass text-sm"
+                      className="w-full glass-input text-sm"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodStart}</label>
-                    <input type="date" value={periodForm.startDate} onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })} className="w-full input-glass text-sm" />
+                    <input type="date" value={periodForm.startDate} onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })} className="w-full glass-input text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodEnd}</label>
-                    <input type="date" value={periodForm.endDate} onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })} className="w-full input-glass text-sm" />
+                    <input type="date" value={periodForm.endDate} onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })} className="w-full glass-input text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodOrder}</label>
@@ -323,13 +323,13 @@ function SchoolYearDetail({
                       min={1}
                       value={periodForm.order}
                       onChange={(e) => setPeriodForm({ ...periodForm, order: parseInt(e.target.value) || 1 })}
-                      className="w-full input-glass text-sm"
+                      className="w-full glass-input text-sm"
                     />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddPeriod(false)} className="btn-secondary text-xs px-3 py-2">{t.modal.cancel}</button>
-                  <button onClick={handleAddPeriod} disabled={loading} className="btn-primary text-xs px-3 py-2 disabled:opacity-50">
+                  <button onClick={() => setShowAddPeriod(false)} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm !text-xs !px-3 !py-2">{t.modal.cancel}</button>
+                  <button onClick={handleAddPeriod} disabled={loading} className="glass-button text-xs px-3 py-2 disabled:opacity-50">
                     {loading ? t.modal.loading : t.modal.addPeriod}
                   </button>
                 </div>
@@ -360,7 +360,7 @@ function SchoolYearDetail({
                     </div>
                     {confirmClose ? (
                       <div className="flex gap-2">
-                        <button onClick={() => setConfirmClose(false)} className="btn-secondary text-xs px-3 py-1.5">{t.modal.cancel}</button>
+                        <button onClick={() => setConfirmClose(false)} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm !text-xs !px-3 !py-1.5">{t.modal.cancel}</button>
                         <button onClick={handleClose} disabled={loading} className="text-xs px-3 py-1.5 rounded-lg bg-[hsla(38,92%,52%,0.2)] border border-[hsla(38,92%,52%,0.3)] text-[hsl(38,92%,60%)] font-semibold disabled:opacity-50">
                           {loading ? "..." : t.detail.closeYear}
                         </button>
@@ -494,7 +494,7 @@ function SchoolYearModal({
               <select
                 value={form.schoolId}
                 onChange={(e) => setForm({ ...form, schoolId: e.target.value })}
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
               >
                 <option value="">— Sin asignar (usar mi escuela) —</option>
                 {schools.map((s: any) => (
@@ -511,17 +511,17 @@ function SchoolYearModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej. Ciclo 2024-2025"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">{t.modal.startDateLabel}</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full input-glass" />
+              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full glass-input" />
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">{t.modal.endDateLabel}</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full input-glass" />
+              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full glass-input" />
             </div>
           </div>
 
@@ -543,10 +543,10 @@ function SchoolYearModal({
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="col-span-2">
-                        <input type="text" value={p.name} onChange={(e) => updatePeriod(idx, "name", e.target.value)} placeholder={t.modal.periodName} className="w-full input-glass text-xs" />
+                        <input type="text" value={p.name} onChange={(e) => updatePeriod(idx, "name", e.target.value)} placeholder={t.modal.periodName} className="w-full glass-input text-xs" />
                       </div>
-                      <input type="date" value={p.startDate} onChange={(e) => updatePeriod(idx, "startDate", e.target.value)} className="input-glass text-xs" />
-                      <input type="date" value={p.endDate} onChange={(e) => updatePeriod(idx, "endDate", e.target.value)} className="input-glass text-xs" />
+                      <input type="date" value={p.startDate} onChange={(e) => updatePeriod(idx, "startDate", e.target.value)} className="glass-input text-xs" />
+                      <input type="date" value={p.endDate} onChange={(e) => updatePeriod(idx, "endDate", e.target.value)} className="glass-input text-xs" />
                     </div>
                   </div>
                 ))}
@@ -557,8 +557,8 @@ function SchoolYearModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="btn-secondary">{t.modal.cancel}</button>
-          <button onClick={handleSave} disabled={loading} className="btn-primary disabled:opacity-50">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm">{t.modal.cancel}</button>
+          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>
         </div>
@@ -712,7 +712,7 @@ export default function SchoolYearsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={`${t.title}...`}
-            className="w-full input-glass pl-9 text-sm"
+            className="w-full !pl-9 glass-input text-sm"
           />
         </div>
 
@@ -721,7 +721,7 @@ export default function SchoolYearsPage() {
           <select
             value={filterSchoolId}
             onChange={(e) => setFilterSchoolId(e.target.value)}
-            className="input-glass text-sm min-w-[180px]"
+            className="glass-input text-sm min-w-[180px]"
           >
             <option value="">{t.allSchools}</option>
             {schools.map((s: any) => (
@@ -735,7 +735,7 @@ export default function SchoolYearsPage() {
           <button
             id="create-school-year-btn"
             onClick={() => { setEditYear(null); setShowModal(true); }}
-            className="btn-primary flex items-center gap-2 whitespace-nowrap"
+            className="glass-button flex items-center gap-2 whitespace-nowrap"
           >
             <Plus size={16} />
             {t.createBtn}
@@ -752,7 +752,7 @@ export default function SchoolYearsPage() {
             <CalendarDays size={40} className="opacity-30" />
             <p className="text-sm">{t.noData}</p>
             {canManage && (
-              <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 text-sm mt-2">
+              <button onClick={() => setShowModal(true)} className="glass-button flex items-center gap-2 text-sm mt-2">
                 <Plus size={15} /> {t.createBtn}
               </button>
             )}
