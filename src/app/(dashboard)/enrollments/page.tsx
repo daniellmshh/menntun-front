@@ -384,7 +384,7 @@ export default function EnrollmentsPage() {
               <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
                 <button
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm"
+                  className="glass-button-secondary"
                 >
                   Cancelar
                 </button>
@@ -461,7 +461,7 @@ export default function EnrollmentsPage() {
               <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
                 <button
                   onClick={() => setIsDetailModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm"
+                  className="glass-button-secondary"
                 >
                   Cerrar
                 </button>

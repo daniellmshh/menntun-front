@@ -328,7 +328,7 @@ function SchoolYearDetail({
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddPeriod(false)} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm !text-xs !px-3 !py-2">{t.modal.cancel}</button>
+                  <button onClick={() => setShowAddPeriod(false)} className="glass-button-secondary">{t.modal.cancel}</button>
                   <button onClick={handleAddPeriod} disabled={loading} className="glass-button text-xs px-3 py-2 disabled:opacity-50">
                     {loading ? t.modal.loading : t.modal.addPeriod}
                   </button>
@@ -360,7 +360,7 @@ function SchoolYearDetail({
                     </div>
                     {confirmClose ? (
                       <div className="flex gap-2">
-                        <button onClick={() => setConfirmClose(false)} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm !text-xs !px-3 !py-1.5">{t.modal.cancel}</button>
+                        <button onClick={() => setConfirmClose(false)} className="glass-button-secondary">{t.modal.cancel}</button>
                         <button onClick={handleClose} disabled={loading} className="text-xs px-3 py-1.5 rounded-lg bg-[hsla(38,92%,52%,0.2)] border border-[hsla(38,92%,52%,0.3)] text-[hsl(38,92%,60%)] font-semibold disabled:opacity-50">
                           {loading ? "..." : t.detail.closeYear}
                         </button>
@@ -557,7 +557,7 @@ function SchoolYearModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm">{t.modal.cancel}</button>
+          <button onClick={onClose} className="glass-button-secondary">{t.modal.cancel}</button>
           <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>

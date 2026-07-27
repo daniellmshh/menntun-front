@@ -316,7 +316,7 @@ function GroupModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm">
+          <button onClick={onClose} className="glass-button-secondary">
             {t.modal.cancel}
           </button>
           <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
