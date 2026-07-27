@@ -236,10 +236,10 @@ function GradeModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="btn-secondary">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-white/5 transition-colors text-[var(--text-primary)] font-semibold text-sm">
             {t.modal.cancel}
           </button>
-          <button onClick={handleSave} disabled={loading} className="btn-primary disabled:opacity-50">
+          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>
         </div>
@@ -362,7 +362,7 @@ export default function GradesCatalogPage() {
               setEditGrade(null);
               setShowModal(true);
             }}
-            className="btn-primary self-start md:self-auto flex items-center gap-2"
+            className="glass-button self-start md:self-auto flex items-center gap-2"
           >
             <Plus size={16} />
             {t.createBtn}
