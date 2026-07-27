@@ -675,6 +675,41 @@ export default function SchoolYearsPage() {
         )}
 
       {/* Modals */}
+      {/* Delete Confirmation Modal */}
+      {yearToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
+          <div className="w-full max-w-sm glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col overflow-hidden animate-fade-in scale-in">
+            <div className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-[hsla(354,85%,56%,0.1)] border border-[hsla(354,85%,56%,0.2)] flex items-center justify-center mx-auto text-[var(--accent-danger)]">
+                <Trash2 size={32} />
+              </div>
+              <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                {t.detail.deleteYearConfirm || "¿Eliminar Ciclo Escolar?"}
+              </h2>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Esta acción no se puede deshacer. Se eliminarán también todos los periodos asociados.
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-3 p-4 border-t border-[var(--border-glass)] bg-black/5">
+              <button 
+                onClick={() => setYearToDelete(null)} 
+                disabled={isDeleting}
+                className="flex-1 glass-button-secondary text-sm py-2"
+              >
+                {t.modal.cancel || "Cancelar"}
+              </button>
+              <button 
+                onClick={confirmDelete}
+                disabled={isDeleting} 
+                className="flex-1 py-2 px-4 rounded-lg bg-[var(--accent-danger)] text-white font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+              >
+                {isDeleting ? "..." : (t.detail.deleteYear || "Eliminar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {(showModal || editYear) && (
         <SchoolYearModal
           year={editYear}
