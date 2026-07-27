@@ -91,7 +91,7 @@ export default function OrganizationsPage() {
           placeholder="Buscar organización por nombre..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full glass-input pl-10 h-12"
+          className="w-full glass-input !pl-10 h-12"
         />
       </div>
 
