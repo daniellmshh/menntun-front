@@ -68,10 +68,10 @@ export default function OrganizationsPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold font-outfit text-white">
+          <h1 className="text-3xl font-extrabold font-outfit text-[var(--text-primary)]">
             Organizaciones
           </h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-[var(--text-secondary)] mt-1">
             Gestiona redes de colegios y escuelas multi-plantel.
           </p>
         </div>
@@ -91,7 +91,7 @@ export default function OrganizationsPage() {
           placeholder="Buscar organización por nombre..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full glass-input pl-10 h-12"
+          className="w-full glass-input !pl-10 h-12"
         />
       </div>
 
@@ -108,8 +108,8 @@ export default function OrganizationsPage() {
                 </div>
                 <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-primary-400 transform group-hover:translate-x-1 transition-all" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{org.name}</h3>
-              <div className="mt-auto pt-4 border-t border-white/10 flex justify-between text-sm text-gray-400">
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{org.name}</h3>
+              <div className="mt-auto pt-4 border-t border-[var(--border-glass)] flex justify-between text-sm text-[var(--text-secondary)]">
                 <span>{org._count.schools} planteles</span>
                 <span>{org._count.users} admins</span>
               </div>
@@ -117,23 +117,23 @@ export default function OrganizationsPage() {
           </Link>
         ))}
         {filteredOrgs.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-400 bg-white/5 rounded-xl border border-white/10">
+          <div className="col-span-full py-12 text-center text-[var(--text-secondary)] bg-[var(--bg-panel)] rounded-xl border border-[var(--border-glass)]">
             No se encontraron organizaciones.
           </div>
         )}
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm px-4">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="glass-panel p-6 w-full max-w-md relative"
+            className="glass-panel p-6 w-full max-w-md relative border border-[var(--border-glass)]"
           >
-            <h2 className="text-xl font-bold mb-4">Crear Organización</h2>
+            <h2 className="text-xl font-bold mb-4 text-[var(--text-primary)]">Crear Organización</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Nombre</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Nombre</label>
                 <input
                   type="text"
                   value={newOrgName}
@@ -146,7 +146,7 @@ export default function OrganizationsPage() {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-black/10 transition-colors text-[var(--text-primary)]"
                 >
                   Cancelar
                 </button>

@@ -19,7 +19,8 @@ export const translations = {
       schoolYears: "School Years",
       gradesCatalog: "Grades Catalog",
       groups: "Groups",
-      catalogs: "Catalogs"
+      catalogs: "Catalogs",
+      organizations: "Organizations"
     },
     header: {
       searchPlaceholder: "Search metrics, users...",
@@ -497,7 +498,8 @@ export const translations = {
       schoolYears: "Ciclos Escolares",
       gradesCatalog: "Catálogo de Grados",
       groups: "Grupos",
-      catalogs: "Catálogos"
+      catalogs: "Catálogos",
+      organizations: "Organizaciones"
     },
     header: {
       searchPlaceholder: "Buscar métricas, usuarios...",

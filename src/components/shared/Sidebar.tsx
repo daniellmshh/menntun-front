@@ -67,6 +67,14 @@ const NAV_ITEMS: SidebarItem[] = [
     moduleKey: null,
   },
   {
+    name: "Organizations",
+    href: "/organizations",
+    icon: Layers,
+    requiredRoles: [UserRole.SUPER_ADMIN],
+    moduleKey: null,
+    hideIfIndependent: true,
+  },
+  {
     name: "Schools",
     href: "/schools",
     icon: Building2,
