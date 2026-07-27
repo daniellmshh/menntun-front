@@ -572,7 +572,7 @@ function GroupDetailDrawer({
                     {group.teachers?.map((gt) => (
                       <div
                         key={gt.teacherProfileId}
-                        className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border-glass)] bg-[hsla(240,16%,8%,0.6)] group"
+                        className="flex items-center justify-between p-3.5 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-panel)] group"
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-[hsla(263,90%,60%,0.15)] flex items-center justify-center text-[var(--accent-primary)]">

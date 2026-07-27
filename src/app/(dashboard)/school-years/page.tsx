@@ -127,7 +127,7 @@ function PeriodRow({
   t: any;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[hsla(240,16%,8%,0.6)] border border-[var(--border-glass)] group">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-glass)] group">
       <div className="w-6 h-6 rounded-md bg-[hsla(263,90%,60%,0.15)] border border-[hsla(263,90%,60%,0.2)] flex items-center justify-center">
         <span className="text-[10px] font-bold text-[var(--accent-primary)]">{period.order}</span>
       </div>
@@ -536,7 +536,7 @@ function SchoolYearModal({
               </div>
               <div className="space-y-3">
                 {periods.map((p, idx) => (
-                  <div key={idx} className="p-3 rounded-xl border border-[var(--border-glass)] bg-[hsla(240,16%,8%,0.5)] space-y-2">
+                  <div key={idx} className="p-3 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-panel)] space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[var(--accent-primary)]">Periodo {idx + 1}</span>
                       <button onClick={() => removePeriod(idx)} className="text-xs text-[var(--accent-danger)] hover:opacity-80">{t.modal.removePeriod}</button>
