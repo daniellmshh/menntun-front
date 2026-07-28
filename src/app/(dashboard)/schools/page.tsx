@@ -498,13 +498,18 @@ export default function SchoolsPage() {
         <>
           {/* Header section */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center md:text-left">
-              <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
-                {t.schools.title}
-              </h1>
-              <p className="text-[var(--text-secondary)] text-sm max-w-2xl">
-                {t.schools.subtitle}
-              </p>
+            <div className="flex items-center gap-4 text-center md:text-left">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+                <Building2 size={24} className="text-white" />
+              </div>
+              <div>
+                <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                  {t.schools.title}
+                </h1>
+                <p className="text-[var(--text-secondary)] text-sm mt-0.5 max-w-2xl">
+                  {t.schools.subtitle}
+                </p>
+              </div>
             </div>
             <button onClick={handleOpenCreateSchool} className="glass-button flex items-center gap-2 text-sm shrink-0">
               <Plus size={16} />
@@ -695,15 +700,20 @@ export default function SchoolsPage() {
       {/* If SCHOOL_ADMIN, render simplified single card */}
       {user?.role === UserRole.SCHOOL_ADMIN && (
         <div className="max-w-2xl mx-auto py-8">
-          <div className="text-center space-y-2 mb-8 animate-fade-in">
-            <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
-              {language === "es" ? "Mi Institución" : "My Institution"}
-            </h1>
-            <p className="text-[var(--text-secondary)] text-sm">
-              {language === "es"
-                ? "Gestiona el estado de módulos y el personal asignado a tu unidad escolar."
-                : "Manage module status and staff assigned to your school unit."}
-            </p>
+          <div className="flex items-center justify-center gap-4 mb-8 text-center animate-fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+              <Building2 size={24} className="text-white" />
+            </div>
+            <div className="text-left">
+              <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                {language === "es" ? "Mi Institución" : "My Institution"}
+              </h1>
+              <p className="text-[var(--text-secondary)] text-sm mt-0.5">
+                {language === "es"
+                  ? "Gestiona el estado de módulos y el personal asignado a tu unidad escolar."
+                  : "Manage module status and staff assigned to your school unit."}
+              </p>
+            </div>
           </div>
 
           {loading ? (

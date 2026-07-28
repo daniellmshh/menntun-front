@@ -749,11 +749,11 @@ export default function SchoolYearsPage() {
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
             <CalendarDays size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">{t.title}</h1>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">{t.title}</h1>
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">{t.subtitle}</p>
           </div>
         </div>

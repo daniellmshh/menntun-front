@@ -11,6 +11,7 @@ import {
   User,
   X,
   Upload,
+  UserPlus,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
@@ -137,13 +138,18 @@ export default function EnrollmentsPage() {
         <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-                  {t.sidebar.enrollments}
-                </h1>
-                <p className="text-[var(--text-secondary)] mt-1">
-                  Gestión de solicitudes de inscripción y reinscripción.
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+                  <UserPlus size={24} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                    {t.sidebar.enrollments}
+                  </h1>
+                  <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+                    Gestión de solicitudes de inscripción y reinscripción.
+                  </p>
+                </div>
               </div>
               {user?.role === "SCHOOL_ADMIN" && (
                 <button

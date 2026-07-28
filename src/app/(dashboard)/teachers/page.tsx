@@ -414,13 +414,18 @@ export default function TeachersPage() {
       <div className="space-y-8 animate-fade-in">
         {/* Header section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1 text-center md:text-left">
-          <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
-            {t.teachers.title}
-          </h1>
-          <p className="text-[var(--text-secondary)] text-sm max-w-2xl">
-            {t.teachers.subtitle}
-          </p>
+        <div className="flex items-center gap-4 text-center md:text-left">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <UserCheck size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+              {t.teachers.title}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-0.5 max-w-2xl">
+              {t.teachers.subtitle}
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <button

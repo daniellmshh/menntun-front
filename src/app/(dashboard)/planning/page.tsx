@@ -80,18 +80,20 @@ export default function PlanningListPage() {
       <div className="space-y-6">
         {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
-            <Compass className="text-[var(--accent-primary)]" size={24} />
-            <span>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <Sparkles size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
               {language === "es" ? "Planeaciones Didácticas" : "Lesson Planning"}
-            </span>
-          </h1>
-          <p className="text-xs text-[var(--text-secondary)]">
-            {language === "es"
-              ? "Crea y administra tus planeaciones didácticas semanales integradas con inteligencia artificial y RAG"
-              : "Create and manage your weekly lesson plans powered by AI & RAG"}
-          </p>
+            </h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              {language === "es"
+                ? "Crea y administra tus planeaciones didácticas semanales integradas con inteligencia artificial y RAG"
+                : "Create and manage your weekly lesson plans powered by AI & RAG"}
+            </p>
+          </div>
         </div>
 
         <Link

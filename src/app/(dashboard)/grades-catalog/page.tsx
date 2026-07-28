@@ -349,12 +349,17 @@ export default function GradesCatalogPage() {
 
         {/* Header section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {t.title}
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">{t.subtitle}</p>
-        </div>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+              <BookMarked size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                {t.title}
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">{t.subtitle}</p>
+            </div>
+          </div>
 
         {canManage && (
           <button
