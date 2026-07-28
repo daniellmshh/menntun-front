@@ -25,7 +25,9 @@ import {
   ToggleRight,
   Save,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import Loader from "@/components/shared/Loader";
 import { useAuthStore } from "@/store/auth.store";
@@ -100,6 +102,7 @@ export default function TeachersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   // Create/Edit Form Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -369,7 +372,7 @@ export default function TeachersPage() {
     }
   };
 
-  // Search filter logic
+  // Search & status filter logic
   const filteredTeachers = teachers.filter((t) => {
     const query = searchQuery.toLowerCase().trim();
     const fullName = `${t.firstName} ${t.lastName}`.toLowerCase();
@@ -379,8 +382,54 @@ export default function TeachersPage() {
       (t.teacherProfile?.employeeNumber && t.teacherProfile.employeeNumber.toLowerCase().includes(query)) ||
       (t.teacherProfile?.specialty && t.teacherProfile.specialty.toLowerCase().includes(query));
 
-    return matchesSearch;
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "active") return t.active === true;
+    if (statusFilter === "inactive") return t.active === false;
+
+    return true;
   });
+
+  // Export report to Excel
+  const handleExportExcel = () => {
+    const exportData = filteredTeachers.map((t, index) => ({
+      "#": index + 1,
+      "Nº Empleado": t.teacherProfile?.employeeNumber || "N/A",
+      "Nombre": t.firstName,
+      "Apellidos": t.lastName,
+      "Correo Electrónico": t.email,
+      "Teléfono": t.phone || "N/A",
+      "Escuela / Plantel": t.school?.name || "N/A",
+      "Especialidad": t.teacherProfile?.specialty || "N/A",
+      "Módulos Permitidos": (t.teacherProfile?.allowedModules && t.teacherProfile.allowedModules.length > 0)
+        ? t.teacherProfile.allowedModules.join(", ")
+        : "Todos",
+      "Estado": t.active ? "Activo" : "Desactivado",
+      "Fecha de Registro": t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "N/A",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    worksheet["!cols"] = [
+      { wch: 5 },   // #
+      { wch: 15 },  // Nº Empleado
+      { wch: 18 },  // Nombre
+      { wch: 22 },  // Apellidos
+      { wch: 32 },  // Correo
+      { wch: 16 },  // Teléfono
+      { wch: 28 },  // Escuela
+      { wch: 22 },  // Especialidad
+      { wch: 28 },  // Módulos
+      { wch: 14 },  // Estado
+      { wch: 16 },  // Fecha
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Maestros");
+
+    const filename = `Reporte_Maestros_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
 
   if (authLoading) {
     return (
@@ -471,9 +520,31 @@ export default function TeachersPage() {
               ))}
             </select>
           )}
+
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="glass-input h-[42px] bg-[var(--bg-surface)] text-sm w-full sm:w-[170px]"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Desactivados</option>
+          </select>
         </div>
 
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+          {/* Export Excel Button */}
+          <button
+            onClick={handleExportExcel}
+            disabled={filteredTeachers.length === 0}
+            className="glass-button-secondary h-[42px] px-4 text-xs font-semibold flex items-center gap-2 shrink-0 border border-[var(--border-glass)] hover:border-[var(--accent-primary)]/40 transition-all disabled:opacity-40"
+            title="Exportar listado a Excel"
+          >
+            <FileSpreadsheet size={16} className="text-[var(--accent-success)]" />
+            <span>Exportar Excel</span>
+          </button>
+
           <button
             onClick={fetchTeachers}
             className="w-[42px] h-[42px] rounded-lg border border-[var(--border-glass)] bg-white/[0.03] flex items-center justify-center cursor-pointer transition-all hover:bg-white/[0.08]"
