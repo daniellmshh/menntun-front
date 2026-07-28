@@ -209,15 +209,17 @@
 
   /* Text Formatting */
   .gradient-text {
-    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-primary-light) 100%);
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary-light) 50%, var(--accent-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block;
   }
 
   .gradient-accent-text {
     background: linear-gradient(135deg, var(--accent-primary-light) 0%, var(--accent-cyan) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    display: inline-block;
   }
 
   /* Inputs & Form Controls */
