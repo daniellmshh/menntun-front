@@ -51,6 +51,29 @@ interface StudentRow {
   email: string;
 }
 
+interface BulkImportResult {
+  enrollmentNumber: string;
+  status: "success" | "error";
+  message: string;
+}
+
+interface BulkImportResponse {
+  results: BulkImportResult[];
+  summary: { total: number; successful: number; failed: number };
+}
+
+function getApiMessage(error: unknown): string | undefined {
+  if (!error || typeof error !== "object" || !("response" in error)) return undefined;
+  const response = error.response;
+  if (!response || typeof response !== "object" || !("data" in response)) return undefined;
+  const data = response.data;
+  if (!data || typeof data !== "object") return undefined;
+  const { error: apiError, message } = data as { error?: unknown; message?: unknown };
+  if (Array.isArray(message) && typeof message[0] === "string") return message[0];
+  if (typeof message === "string") return message;
+  return typeof apiError === "string" ? apiError : undefined;
+}
+
 export default function GroupDetailDrawer({
   group: initialGroup,
   onClose,
@@ -62,9 +85,6 @@ export default function GroupDetailDrawer({
 }) {
   const { user } = useAuthStore();
   const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.SCHOOL_ADMIN;
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const [group, setGroup] = useState<AcademicGroup>(initialGroup);
   const [activeTab, setActiveTab] = useState<"general" | "teachers" | "subjects" | "students">("general");
@@ -83,7 +103,7 @@ export default function GroupDetailDrawer({
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [bulkImportText, setBulkImportText] = useState("");
-  const [bulkImportResult, setBulkImportResult] = useState<any[] | null>(null);
+  const [bulkImportResult, setBulkImportResult] = useState<BulkImportResult[] | null>(null);
   const [bulkImportSummary, setBulkImportSummary] = useState<{ total: number; successful: number; failed: number } | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -133,13 +153,19 @@ export default function GroupDetailDrawer({
   }, [group.id]);
 
   useEffect(() => {
-    fetchDetail();
-    fetchTeachers();
+    const timer = window.setTimeout(() => {
+      void fetchDetail();
+      void fetchTeachers();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [fetchDetail, fetchTeachers]);
 
   useEffect(() => {
-    if (activeTab === "subjects") fetchSubjects();
-    if (activeTab === "students") fetchStudents();
+    const timer = window.setTimeout(() => {
+      if (activeTab === "subjects") void fetchSubjects();
+      if (activeTab === "students") void fetchStudents();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [activeTab, fetchSubjects, fetchStudents]);
 
   // ── Teacher tab ────────────────────────────────────────────────
@@ -154,10 +180,8 @@ export default function GroupDetailDrawer({
       fetchDetail();
       setAssignForm({ teacherProfileId: "", isHomeroom: false });
       showAlert(t.alerts.successAssignTeacher, "success");
-    } catch (e: any) {
-      const data = e?.response?.data;
-      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
-      showAlert(msg || data?.error || t.alerts.errorAssignTeacher, "error");
+    } catch (error) {
+      showAlert(getApiMessage(error) || t.alerts.errorAssignTeacher, "error");
     } finally {
       setLoading(false);
     }
@@ -186,18 +210,18 @@ export default function GroupDetailDrawer({
         showAlert(`Materia "${subj.name}" removida del grupo`, "success");
         fetchSubjects();
         fetchDetail();
-      } catch (e: any) {
-        showAlert(e?.response?.data?.message || "Error al remover materia", "error");
+      } catch (error) {
+        showAlert(getApiMessage(error) || "Error al remover materia", "error");
       }
     } else {
       try {
-        const payload: any = { subjectId: subj.id };
+        const payload: { subjectId: string; teacherProfileId?: string } = { subjectId: subj.id };
         if (subjectTeacherMap[subj.id]) payload.teacherProfileId = subjectTeacherMap[subj.id];
         await api.post(`/academic/groups/${group.id}/subjects`, payload);
         showAlert(`Materia "${subj.name}" asignada al grupo`, "success");
         fetchSubjects();
-      } catch (e: any) {
-        showAlert(e?.response?.data?.message || "Error al asignar materia", "error");
+      } catch (error) {
+        showAlert(getApiMessage(error) || "Error al asignar materia", "error");
       }
     }
   };
@@ -213,8 +237,8 @@ export default function GroupDetailDrawer({
       showAlert("Alumno asignado exitosamente", "success");
       fetchStudents();
       fetchDetail();
-    } catch (e: any) {
-      showAlert(e?.response?.data?.message || "Error al asignar alumno", "error");
+    } catch (error) {
+      showAlert(getApiMessage(error) || "Error al asignar alumno", "error");
     } finally {
       setStudentsLoading(false);
     }
@@ -228,8 +252,8 @@ export default function GroupDetailDrawer({
       showAlert("Alumno removido del grupo", "success");
       fetchStudents();
       fetchDetail();
-    } catch (e: any) {
-      showAlert(e?.response?.data?.message || "Error al remover alumno", "error");
+    } catch (error) {
+      showAlert(getApiMessage(error) || "Error al remover alumno", "error");
     } finally {
       setStudentsLoading(false);
     }
@@ -257,15 +281,15 @@ export default function GroupDetailDrawer({
     setBulkImportResult(null);
     setBulkImportSummary(null);
     try {
-      const res = await api.post(`/academic/groups/${group.id}/students/bulk`, { students: rows });
+      const res = await api.post<ApiResponse<BulkImportResponse>>(`/academic/groups/${group.id}/students/bulk`, { students: rows });
       const { results, summary } = res.data.data;
       setBulkImportResult(results);
       setBulkImportSummary(summary);
       fetchStudents();
       fetchDetail();
       showAlert(`${summary.successful} alumnos asignados. ${summary.failed} con error.`, summary.failed === 0 ? "success" : "error");
-    } catch (e: any) {
-      showAlert(e?.response?.data?.message || "Error en importación masiva", "error");
+    } catch (error) {
+      showAlert(getApiMessage(error) || "Error en importación masiva", "error");
     } finally {
       setImportLoading(false);
     }
@@ -300,8 +324,6 @@ export default function GroupDetailDrawer({
     { key: "students", label: t.detail.studentsTab },
   ] as const;
 
-  if (!mounted) return null;
-
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-end"
@@ -331,7 +353,7 @@ export default function GroupDetailDrawer({
           {TABS.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
+              onClick={() => setActiveTab(tab.key)}
               className={`flex-1 py-3 px-2 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
                 activeTab === tab.key
                   ? "border-[var(--accent-primary)] text-[var(--accent-primary)]"
@@ -470,7 +492,7 @@ export default function GroupDetailDrawer({
               {!homeroomTeacher && isAdmin && (
                 <div className="flex items-start gap-2 p-3 rounded-xl border border-[hsla(38,92%,52%,0.25)] bg-[hsla(38,92%,52%,0.08)] text-[hsl(38,92%,65%)] text-xs">
                   <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
-                  Para asignar materias sin maestro específico, primero asigna un maestro titular en la pestaña "Maestros".
+                  Para asignar materias sin maestro específico, primero asigna un maestro titular en la pestaña &quot;Maestros&quot;.
                 </div>
               )}
               <p className="text-xs text-[var(--text-muted)]">Activa o desactiva las materias de este grupo. Si no especificas maestro, se usará el titular del grupo.</p>
