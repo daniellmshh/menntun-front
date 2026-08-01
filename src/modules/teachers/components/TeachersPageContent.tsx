@@ -36,60 +36,8 @@ import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
-
-interface Teacher {
-  id: string;
-  email: string;
-  role: UserRole;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  active: boolean;
-  createdAt: string;
-  schoolId: string;
-  school?: {
-    name: string;
-    code: string;
-  };
-  teacherProfile?: {
-    employeeNumber?: string;
-    specialty?: string;
-    hireDate?: string;
-    allowedModules?: string[];
-    groupAssignments?: Array<{
-      id: string;
-      group: {
-        id: string;
-        name: string;
-        section: string;
-        grade: { name: string };
-        schoolYear: { name: string };
-      };
-    }>;
-    subjectAssignments?: Array<{
-      id: string;
-      subject: { name: string };
-      group: {
-        id: string;
-        name: string;
-        section: string;
-        grade: { name: string };
-      };
-    }>;
-  };
-}
-
-interface School {
-  id: string;
-  name: string;
-  code: string;
-}
-
-interface SchoolModule {
-  module: string;
-  active: boolean;
-  isCore: boolean;
-}
+import type { SchoolModule, SchoolOption, Teacher } from "../types";
+import TeacherFormModal from "./TeacherFormModal";
 
 export default function TeachersPage() {
   const { user, isLoading: authLoading } = useAuthStore();
@@ -98,7 +46,7 @@ export default function TeachersPage() {
 
   // List states
   const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [schools, setSchools] = useState<School[]>([]);
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -166,7 +114,7 @@ export default function TeachersPage() {
   const fetchSchools = async () => {
     if (user?.role !== UserRole.SUPER_ADMIN) return;
     try {
-      const response = await api.get<ApiResponse<School[]>>("/schools");
+      const response = await api.get<ApiResponse<SchoolOption[]>>("/schools");
       setSchools(response.data.data || []);
     } catch (err) {
       console.error("Error fetching schools list:", err);
@@ -708,196 +656,35 @@ export default function TeachersPage() {
       )}
 
       {/* Modal - Create/Edit Teacher */}
-      {mounted && isFormModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
-            <button
-              onClick={() => setIsFormModalOpen(false)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold gradient-text">
-                {formModalMode === "create" ? t.teachers.modal.createTitle : t.teachers.modal.editTitle}
-              </h2>
-            </div>
-
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              {formError && (
-                <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                  {formError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
-                {/* Names */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.users.modal.firstName} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={teacherFirstName}
-                      onChange={(e) => setTeacherFirstName(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.users.modal.lastName} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={teacherLastName}
-                      onChange={(e) => setTeacherLastName(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                </div>
-
-                {/* Email (immutable on edit) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.users.modal.email} *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={teacherEmail}
-                    onChange={(e) => setTeacherEmail(e.target.value)}
-                    className="glass-input"
-                    disabled={formSubmitting || formModalMode === "edit"}
-                  />
-                </div>
-
-                {/* Password (create only) */}
-                {formModalMode === "create" && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.teachers.modal.passwordLabel} *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={teacherPassword}
-                      onChange={(e) => setTeacherPassword(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                )}
-
-                {/* Phone */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.teachers.table.phone}
-                  </label>
-                  <input
-                    type="text"
-                    value={teacherPhone}
-                    onChange={(e) => setTeacherPhone(e.target.value)}
-                    className="glass-input"
-                    disabled={formSubmitting}
-                  />
-                </div>
-
-                {/* School Selector (SUPER_ADMIN only, create mode only) */}
-                {user?.role === UserRole.SUPER_ADMIN && formModalMode === "create" && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.teachers.details.schoolName || "School"} *
-                    </label>
-                    <select
-                      value={teacherSchoolId}
-                      onChange={(e) => setTeacherSchoolId(e.target.value)}
-                      className="glass-input bg-[var(--bg-surface)]"
-                      disabled={formSubmitting}
-                    >
-                      <option value="">Selecciona escuela / Select school</option>
-                      {schools.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Employee Number */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.teachers.modal.employeeNumberLabel}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="EMP-001"
-                    value={teacherEmpNumber}
-                    onChange={(e) => setTeacherEmpNumber(e.target.value)}
-                    className="glass-input font-mono"
-                    disabled={formSubmitting}
-                  />
-                </div>
-
-                {/* Specialty */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.teachers.modal.specialtyLabel}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Mathematics, Physics ..."
-                    value={teacherSpecialty}
-                    onChange={(e) => setTeacherSpecialty(e.target.value)}
-                    className="glass-input"
-                    disabled={formSubmitting}
-                  />
-                </div>
-
-                {/* Hire Date */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.teachers.modal.hireDateLabel}
-                  </label>
-                  <input
-                    type="date"
-                    value={teacherHireDate}
-                    onChange={(e) => setTeacherHireDate(e.target.value)}
-                    className="glass-input"
-                    disabled={formSubmitting}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-glass)]">
-                <button
-                  type="button"
-                  onClick={() => setIsFormModalOpen(false)}
-                  disabled={formSubmitting}
-                  className="glass-button-secondary py-2 px-5 text-sm cursor-pointer"
-                >
-                  {t.teachers.modal.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="glass-button py-2 px-5 text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  {formSubmitting && <Loader2 size={16} className="animate-spin" />}
-                  <span>{formSubmitting ? t.teachers.modal.loading : t.teachers.modal.save}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
+      {mounted && isFormModalOpen && (
+        <TeacherFormModal
+          mode={formModalMode}
+          t={t}
+          error={formError}
+          submitting={formSubmitting}
+          canSelectSchool={user?.role === UserRole.SUPER_ADMIN}
+          schools={schools}
+          email={teacherEmail}
+          password={teacherPassword}
+          firstName={teacherFirstName}
+          lastName={teacherLastName}
+          phone={teacherPhone}
+          schoolId={teacherSchoolId}
+          employeeNumber={teacherEmpNumber}
+          specialty={teacherSpecialty}
+          hireDate={teacherHireDate}
+          onEmailChange={setTeacherEmail}
+          onPasswordChange={setTeacherPassword}
+          onFirstNameChange={setTeacherFirstName}
+          onLastNameChange={setTeacherLastName}
+          onPhoneChange={setTeacherPhone}
+          onSchoolIdChange={setTeacherSchoolId}
+          onEmployeeNumberChange={setTeacherEmpNumber}
+          onSpecialtyChange={setTeacherSpecialty}
+          onHireDateChange={setTeacherHireDate}
+          onClose={() => setIsFormModalOpen(false)}
+          onSubmit={handleFormSubmit}
+        />
       )}
 
       {/* Modal - Teacher Detailed View (Tabs: General, Permissions, Assignments) */}
