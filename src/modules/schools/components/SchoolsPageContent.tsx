@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import React, { useCallback, useEffect, useState } from "react";
 import SchoolFormModal from "./SchoolFormModal";
 import SchoolUserFormModal, { type SchoolUserPosition } from "./SchoolUserFormModal";
+import SchoolDetailModal from "./SchoolDetailModal";
 import {
   Building2,
   Plus,
@@ -18,12 +18,6 @@ import {
   Mail,
   RefreshCw,
   Eye,
-  UserPlus,
-  ToggleLeft,
-  ToggleRight,
-  UserCheck,
-  UserX,
-  User,
 } from "lucide-react";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import { useAuthStore } from "@/store/auth.store";
@@ -32,37 +26,28 @@ import Loader from "@/components/shared/Loader";
 import { translations } from "@/lib/translations";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
+import type { School, SchoolDetailTab, SchoolModule, SchoolUser } from "../types";
 
-interface School {
-  id: string;
-  name: string;
-  code: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  logoUrl?: string;
-  active: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  _count?: {
-    users: number;
-  };
-}
+function getApiErrorMessage(error: unknown): string | undefined {
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return undefined;
+  }
 
-interface SchoolModule {
-  module: string;
-  active: boolean;
-  isCore: boolean;
-}
+  const response = error.response;
+  if (typeof response !== "object" || response === null || !("data" in response)) {
+    return undefined;
+  }
 
-interface SchoolUser {
-  id: string;
-  email: string;
-  role: UserRole;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  active: boolean;
+  const data = response.data;
+  if (typeof data !== "object" || data === null) {
+    return undefined;
+  }
+
+  if ("error" in data && typeof data.error === "string") {
+    return data.error;
+  }
+
+  return "message" in data && typeof data.message === "string" ? data.message : undefined;
 }
 
 export default function SchoolsPage() {
@@ -77,8 +62,6 @@ export default function SchoolsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Create/Edit School Modal states
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
   const [schoolModalMode, setSchoolModalMode] = useState<"create" | "edit">("create");
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -97,7 +80,7 @@ export default function SchoolsPage() {
   // Detail Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [detailSchool, setDetailSchool] = useState<School | null>(null);
-  const [detailTab, setDetailTab] = useState<"general" | "modules" | "users">("general");
+  const [detailTab, setDetailTab] = useState<SchoolDetailTab>("general");
 
   // Modules tab states
   const [modules, setModules] = useState<SchoolModule[]>([]);
@@ -129,7 +112,7 @@ export default function SchoolsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   // Fetch schools list
-  const fetchSchools = async () => {
+  const fetchSchools = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -140,60 +123,69 @@ export default function SchoolsPage() {
         const response = await api.get<ApiResponse<School>>("/schools/me");
         setSchools(response.data.data ? [response.data.data] : []);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching schools:", err);
       setError(t.schools.alerts.errorFetch);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t.schools.alerts.errorFetch, user]);
 
   useEffect(() => {
     if (user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.SCHOOL_ADMIN) {
-      fetchSchools();
+      const timeoutId = window.setTimeout(() => {
+        void fetchSchools();
+      }, 0);
+      return () => window.clearTimeout(timeoutId);
     }
-  }, [user]);
+  }, [fetchSchools, user?.role]);
 
   // Load modules details
-  const fetchModules = async (schoolId: string) => {
+  const fetchModules = useCallback(async (schoolId: string) => {
     try {
       setModulesLoading(true);
       setModulesError(null);
       const response = await api.get<ApiResponse<SchoolModule[]>>(`/schools/${schoolId}/modules`);
       setModules(response.data.data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching school modules:", err);
       setModulesError(t.schools.modules.errorToggle);
     } finally {
       setModulesLoading(false);
     }
-  };
+  }, [t.schools.modules.errorToggle]);
 
   // Load school users
-  const fetchUsers = async (schoolId: string) => {
+  const fetchUsers = useCallback(async (schoolId: string) => {
     try {
       setUsersLoading(true);
       setUsersError(null);
       const response = await api.get<ApiResponse<SchoolUser[]>>(`/schools/${schoolId}/users`);
       setUsers(response.data.data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching school users:", err);
       setUsersError(t.schools.users.errorFetch);
     } finally {
       setUsersLoading(false);
     }
-  };
+  }, [t.schools.users.errorFetch]);
 
   // Handle Tab Switch
   useEffect(() => {
     if (detailSchool) {
       if (detailTab === "modules") {
-        fetchModules(detailSchool.id);
+        const timeoutId = window.setTimeout(() => {
+          void fetchModules(detailSchool.id);
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
       } else if (detailTab === "users") {
-        fetchUsers(detailSchool.id);
+        const timeoutId = window.setTimeout(() => {
+          void fetchUsers(detailSchool.id);
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
       }
     }
-  }, [detailTab, detailSchool]);
+  }, [detailSchool, detailTab, fetchModules, fetchUsers]);
 
   // Open details view
   const handleOpenDetails = (school: School) => {
@@ -261,15 +253,21 @@ export default function SchoolsPage() {
       if (schoolModalMode === "create") {
         await api.post("/schools", payload);
       } else if (selectedSchool) {
-        const { code: _, ...updatePayload } = payload;
+        const updatePayload = {
+          name: payload.name,
+          address: payload.address,
+          phone: payload.phone,
+          email: payload.email,
+          logoUrl: payload.logoUrl,
+        };
         await api.patch(`/schools/${selectedSchool.id}`, updatePayload);
       }
 
       setIsSchoolModalOpen(false);
       fetchSchools();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("School form submit error:", err);
-      const backendMessage = err.response?.data?.error || err.response?.data?.message;
+      const backendMessage = getApiErrorMessage(err);
       setSchoolFormError(
         backendMessage || 
         (schoolModalMode === "create" ? t.schools.alerts.errorCreate : t.schools.alerts.errorUpdate)
@@ -409,9 +407,9 @@ export default function SchoolsPage() {
 
       setIsUserModalOpen(false);
       fetchUsers(detailSchool.id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("User form submit error:", err);
-      const backendMessage = err.response?.data?.error || err.response?.data?.message;
+      const backendMessage = getApiErrorMessage(err);
       setUserFormError(
         backendMessage || 
         (userModalMode === "create" ? t.schools.users.modal.errorCreate : t.schools.users.modal.errorUpdate)
@@ -782,7 +780,7 @@ export default function SchoolsPage() {
       )}
 
       {/* Modal - Create/Edit School */}
-      {mounted && isSchoolModalOpen && (
+      {isSchoolModalOpen && (
         <SchoolFormModal
           mode={schoolModalMode}
           t={t}
@@ -808,311 +806,30 @@ export default function SchoolsPage() {
       )}
 
       {/* Modal - School Detailed View (Tabs: General, Modules, Users) */}
-      {mounted && isDetailModalOpen && detailSchool && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-panel max-w-3xl w-full p-6 border border-[var(--border-glass)] relative flex flex-col max-h-[85vh] overflow-hidden animate-scale-up">
-            <button
-              onClick={() => setIsDetailModalOpen(false)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer z-10"
-            >
-              <X size={20} />
-            </button>
-
-            {/* School Title in Modal */}
-            <div className="flex items-center gap-4 border-b border-[var(--border-glass)] pb-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 border border-[var(--border-glass)] flex items-center justify-center text-[var(--accent-primary)] shrink-0">
-                {detailSchool.logoUrl ? (
-                  <img
-                    src={detailSchool.logoUrl}
-                    alt={detailSchool.name}
-                    className="w-full h-full object-cover rounded-2xl"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <Building2 size={24} />
-                )}
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-[var(--text-primary)]">{detailSchool.name}</h2>
-                <p className="text-xs text-[var(--text-muted)] font-mono">Code: {detailSchool.code} | ID: {detailSchool.id}</p>
-              </div>
-            </div>
-
-            {/* Tab navigation */}
-            <div className="flex border-b border-[var(--border-glass)] gap-6 pb-1">
-              <button
-                onClick={() => setDetailTab("general")}
-                className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer
-                  ${detailTab === "general" ? "border-[var(--accent-primary)] text-[var(--text-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}
-                `}
-              >
-                {t.schools.tabs.details}
-              </button>
-              <button
-                onClick={() => setDetailTab("modules")}
-                className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer
-                  ${detailTab === "modules" ? "border-[var(--accent-primary)] text-[var(--text-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}
-                `}
-              >
-                {t.schools.tabs.modules}
-              </button>
-              <button
-                onClick={() => setDetailTab("users")}
-                className={`pb-3 text-sm font-semibold tracking-wide border-b-2 transition-all cursor-pointer
-                  ${detailTab === "users" ? "border-[var(--accent-primary)] text-[var(--text-primary)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}
-                `}
-              >
-                {t.schools.tabs.users}
-              </button>
-            </div>
-
-            {/* Tab content area (scrollable) */}
-            <div className="flex-1 overflow-y-auto pr-1 mt-4 space-y-6 custom-scrollbar" style={{ minHeight: "300px" }}>
-              {/* TAB 1: General Details */}
-              {detailTab === "general" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.details.contactLocation}</h3>
-                    <div className="space-y-3 bg-black/10 p-4 rounded-xl border border-[var(--border-glass)]">
-                      <div className="flex items-start gap-3">
-                        <MapPin size={18} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs text-[var(--text-muted)] block">{t.schools.details.address}</span>
-                          <span className="text-sm text-[var(--text-primary)]">{detailSchool.address || "N/A"}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Phone size={18} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs text-[var(--text-muted)] block">{t.schools.details.phone}</span>
-                          <span className="text-sm text-[var(--text-primary)]">{detailSchool.phone || "N/A"}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Mail size={18} className="text-[var(--text-muted)] shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs text-[var(--text-muted)] block">{t.schools.details.email}</span>
-                          <span className="text-sm text-[var(--text-primary)]">{detailSchool.email || "N/A"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.details.accountInfo}</h3>
-                    <div className="space-y-3 bg-black/10 p-4 rounded-xl border border-[var(--border-glass)]">
-                      <div className="flex justify-between items-center py-1.5 border-b border-white/5">
-                        <span className="text-xs text-[var(--text-secondary)]">{t.schools.details.activeStatus}</span>
-                        <span className={`text-xs font-bold ${detailSchool.active ? "text-[var(--accent-success)]" : "text-[var(--accent-danger)]"}`}>
-                          {detailSchool.active ? t.schools.status.active : t.schools.status.inactive}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-1.5 border-b border-white/5">
-                        <span className="text-xs text-[var(--text-secondary)]">{t.schools.details.registeredUsers}</span>
-                        <span className="text-xs font-bold text-[var(--text-primary)]">
-                          {detailSchool._count?.users ?? 0}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-1.5">
-                        <span className="text-xs text-[var(--text-secondary)]">{t.schools.details.createdAt}</span>
-                        <span className="text-xs font-mono text-[var(--text-muted)]">
-                          {detailSchool.createdAt ? new Date(detailSchool.createdAt).toLocaleDateString() : "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 2: Modules activation */}
-              {detailTab === "modules" && (
-                <div className="space-y-4 py-2">
-                  <div className="space-y-1">
-                    <h3 className="text-lg font-bold">{t.schools.modules.title}</h3>
-                    <p className="text-xs text-[var(--text-secondary)]">{t.schools.modules.subtitle}</p>
-                  </div>
-
-                  {modulesLoading ? (
-                    <div className="py-12 flex justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
-                    </div>
-                  ) : modulesError ? (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                      {modulesError}
-                    </div>
-                  ) : (
-                    <div className="glass-panel overflow-hidden border border-[var(--border-glass)]">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-[var(--border-glass)] bg-white/[0.01]">
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.modules.colName}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[120px]">{t.schools.modules.colType}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[150px] text-right">{t.schools.modules.colStatus}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {modules.map((m) => {
-                            const sidebarKey = (
-                              m.module === "schoolYears" ? "schoolYears" :
-                              m.module === "gradesCatalog" ? "gradesCatalog" :
-                              m.module.toLowerCase()
-                            ) as keyof typeof t.sidebar;
-                            return (
-                            <tr key={m.module} className="hover:bg-white/[0.01]">
-                              <td className="p-3">
-                                <span className="font-semibold text-sm capitalize">
-                                  {t.sidebar[sidebarKey] || m.module}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${m.isCore ? "bg-purple-500/15 border-purple-500/30 text-purple-300" : "bg-cyan-500/15 border-cyan-500/30 text-cyan-300"}`}>
-                                  {m.isCore ? t.schools.modules.core : t.schools.modules.optional}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <div className="flex justify-end items-center">
-                                  {m.isCore ? (
-                                    <span className="text-xs text-[var(--text-muted)] italic">
-                                      {t.schools.modules.coreActive}
-                                    </span>
-                                  ) : user?.role === UserRole.SUPER_ADMIN ? (
-                                    <button
-                                      onClick={() => handleToggleModule(m.module, m.active)}
-                                      className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                                    >
-                                      {m.active ? (
-                                        <ToggleRight size={32} className="text-[var(--accent-success)]" />
-                                      ) : (
-                                        <ToggleLeft size={32} className="text-[var(--text-muted)]" />
-                                      )}
-                                    </button>
-                                  ) : (
-                                    <div className="text-[var(--text-secondary)] opacity-50 cursor-not-allowed" title="Solo el Super Admin puede modificar módulos">
-                                      {m.active ? (
-                                        <ToggleRight size={32} className="text-[var(--accent-success)]" />
-                                      ) : (
-                                        <ToggleLeft size={32} className="text-[var(--text-muted)]" />
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* TAB 3: User Assignment / Management */}
-              {detailTab === "users" && (
-                <div className="space-y-4 py-2">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <h3 className="text-lg font-bold">{t.schools.users.title}</h3>
-                      <p className="text-xs text-[var(--text-secondary)]">{t.schools.users.subtitle}</p>
-                    </div>
-                    <button
-                      onClick={handleOpenAddUser}
-                      className="glass-button flex items-center gap-1 text-xs py-2 px-4"
-                    >
-                      <UserPlus size={14} />
-                      <span>{t.schools.users.addBtn}</span>
-                    </button>
-                  </div>
-
-                  {usersLoading ? (
-                    <div className="py-12 flex justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
-                    </div>
-                  ) : usersError ? (
-                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                      {usersError}
-                    </div>
-                  ) : users.length === 0 ? (
-                    <div className="glass-panel p-10 text-center text-[var(--text-secondary)] text-sm border-dashed border-[var(--border-glass)]">
-                      {t.schools.users.noUsers}
-                    </div>
-                  ) : (
-                    <div className="glass-panel overflow-hidden border border-[var(--border-glass)]">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="border-b border-[var(--border-glass)] bg-white/[0.01]">
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.users.table.name}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.users.table.email}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">{t.schools.users.table.role}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[100px] text-center">{t.schools.users.table.status}</th>
-                            <th className="p-3 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[120px] text-right">{t.schools.users.table.actions}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {users.map((u) => (
-                            <tr key={u.id} className="hover:bg-white/[0.01]">
-                              <td className="p-3">
-                                <span className="font-semibold text-sm">{u.firstName} {u.lastName}</span>
-                              </td>
-                              <td className="p-3 text-xs text-[var(--text-secondary)] font-mono">{u.email}</td>
-                              <td className="p-3">
-                                <span className="text-xs text-[var(--text-primary)] font-medium">
-                                  {u.role === UserRole.SUPER_ADMIN
-                                    ? t.schools.users.roles.SUPER_ADMIN
-                                    : u.role === UserRole.TEACHER
-                                    ? t.schools.users.roles.TEACHER
-                                    : t.schools.users.roles.SCHOOL_ADMIN}
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${u.active ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"}`}>
-                                  {u.active ? t.schools.status.active : t.schools.status.inactive}
-                                </span>
-                              </td>
-                              <td className="p-3">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  <button
-                                    onClick={() => handleOpenEditUser(u)}
-                                    className="p-1.5 rounded border border-[var(--border-glass)] bg-white/[0.02] hover:bg-white/[0.08] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-                                  >
-                                    <Edit2 size={12} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleToggleUserActive(u)}
-                                    disabled={actionLoadingId === u.id}
-                                    className={`p-1.5 rounded border cursor-pointer disabled:opacity-50
-                                      ${u.active ? "bg-red-500/10 border-red-500/20 text-[var(--accent-danger)] hover:bg-red-500/20" : "bg-emerald-500/10 border-emerald-500/20 text-[var(--accent-success)] hover:bg-emerald-500/20"}
-                                    `}
-                                    title={u.active ? t.schools.deactivateBtn : t.schools.activateBtn}
-                                  >
-                                    {actionLoadingId === u.id ? (
-                                      <Loader2 size={12} className="animate-spin" />
-                                    ) : u.active ? (
-                                      <UserX size={12} />
-                                    ) : (
-                                      <UserCheck size={12} />
-                                    )}
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>,
-        document.body
+      {isDetailModalOpen && detailSchool && (
+        <SchoolDetailModal
+          school={detailSchool}
+          tab={detailTab}
+          modules={modules}
+          modulesLoading={modulesLoading}
+          modulesError={modulesError}
+          users={users}
+          usersLoading={usersLoading}
+          usersError={usersError}
+          actionLoadingId={actionLoadingId}
+          canManageModules={user?.role === UserRole.SUPER_ADMIN}
+          t={t}
+          onClose={() => setIsDetailModalOpen(false)}
+          onTabChange={setDetailTab}
+          onToggleModule={handleToggleModule}
+          onAddUser={handleOpenAddUser}
+          onEditUser={handleOpenEditUser}
+          onToggleUserActive={handleToggleUserActive}
+        />
       )}
 
       {/* Modal - Create/Edit User */}
-      {mounted && isUserModalOpen && detailSchool && (
+      {isUserModalOpen && detailSchool && (
         <SchoolUserFormModal
           mode={userModalMode}
           t={t}
