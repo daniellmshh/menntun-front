@@ -2,10 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Check,
-  Info,
-} from "lucide-react";
+import { Info } from "lucide-react";
 import api from "@/lib/api/axios";
 import { getPlanningCatalogo } from "@/modules/planning/services/planning.service";
 import {
@@ -18,13 +15,13 @@ import {
 import { PlanningModalidadLabels } from "@/modules/planning/constants";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
-import { sanitizeInput } from "@/lib/utils";
 import PlanningGenerationOverlay from "./PlanningGenerationOverlay";
 import PlanningWizardNavigation from "./PlanningWizardNavigation";
 import PlanningWizardStepIndicator from "./PlanningWizardStepIndicator";
 import PlanningWizardHeader from "./PlanningWizardHeader";
 import PlanningIdentificationStep from "./PlanningIdentificationStep";
 import PlanningCurricularStep from "./PlanningCurricularStep";
+import PlanningOperationalCatalogsStep from "./PlanningOperationalCatalogsStep";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -444,118 +441,24 @@ function NewPlanningContent() {
 
       {/* ──── STEP 2: Catálogos operativos Sara ──── */}
       {step === 2 && catalogo && (
-        <div className="space-y-6">
-          {/* Problemática */}
-          <div className="glass-panel p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-              Problemática del Diagnóstico <span className="text-[var(--accent-danger)]">*</span>
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">
-              La situación del contexto comunitario o escolar que motiva el proyecto.
-            </p>
-            <div className="space-y-2 mb-3">
-              {catalogo.catalogosOperativos.problematicas.map((prob) => (
-                <button
-                  key={prob}
-                  onClick={() => { setProblematica(prob); setProblematicaCustom(""); }}
-                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                    problematica === prob
-                      ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
-                      : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
-                  }`}
-                >
-                  {problematica === prob && <Check size={14} className="inline mr-2 text-[var(--accent-primary)]" />}
-                  {prob}
-                </button>
-              ))}
-              <button
-                onClick={() => setProblematica("__custom__")}
-                className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                  problematica === "__custom__"
-                    ? "bg-[var(--accent-primary)]/15 border-[var(--accent-primary)]/40 text-[var(--text-primary)]"
-                    : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)]/30"
-                }`}
-              >
-                ✏️ Escribir una problemática personalizada...
-              </button>
-            </div>
-            {problematica === "__custom__" && (
-              <textarea
-                value={problematicaCustom}
-                onChange={(e) => setProblematicaCustom(sanitizeInput(e.target.value, true))}
-                placeholder="Describe la problemática de tu diagnóstico..."
-                rows={3}
-                className="glass-input w-full"
-              />
-            )}
-          </div>
-
-          {/* Propósito */}
-          <div className="glass-panel p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">
-              Propósito / Justificación <span className="text-[var(--accent-danger)]">*</span>
-            </h2>
-            <textarea
-              value={proposito}
-              onChange={(e) => setProposito(sanitizeInput(e.target.value, true))}
-              placeholder="Describe el propósito formativo del proyecto, centrado en los aprendizajes de los alumnos..."
-              rows={4}
-              className="glass-input w-full"
-            />
-          </div>
-
-          {/* Instrumento evaluación */}
-          <div className="glass-panel p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              Instrumento de Evaluación
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {catalogo.catalogosOperativos.instrumentosEvaluacion.map((instr) => {
-                const sel = instrSeleccionados.includes(instr);
-                return (
-                  <button
-                    key={instr}
-                    onClick={() => toggleMulti(instr, instrSeleccionados, setInstrSeleccionados)}
-                    className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-                      sel
-                        ? "bg-[var(--accent-success)]/20 border-[var(--accent-success)]/40 text-[var(--accent-success)]"
-                        : "border-[var(--border-glass)] text-[var(--text-secondary)] hover:border-[var(--accent-success)]/30"
-                    }`}
-                  >
-                    {sel && <Check size={12} className="inline mr-1.5" />}
-                    {instr}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Ajustes razonables */}
-          <div className="glass-panel p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              Ajustes Razonables
-            </h2>
-            <textarea
-              className="glass-input w-full h-24 resize-none"
-              placeholder="Ej. Reducir el nivel de ruido, ubicar a estudiantes cerca del docente..."
-              value={ajustesTexto}
-              onChange={(e) => setAjustesTexto(sanitizeInput(e.target.value, false))}
-            />
-          </div>
-
-          {/* Actividades PMC */}
-          <div className="glass-panel p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
-              Actividades PMC (Opcional)
-            </h2>
-            <textarea
-              className="glass-input w-full h-24 resize-none"
-              placeholder="Ej. Convivencia escolar, visita a la biblioteca..."
-              value={pmcTexto}
-              onChange={(e) => setPmcTexto(sanitizeInput(e.target.value, false))}
-            />
-          </div>
-        </div>
+        <PlanningOperationalCatalogsStep
+          catalogo={catalogo}
+          problematica={problematica}
+          problematicaCustom={problematicaCustom}
+          proposito={proposito}
+          instrSeleccionados={instrSeleccionados}
+          ajustesTexto={ajustesTexto}
+          pmcTexto={pmcTexto}
+          onProblematicaChange={(value) => {
+            setProblematica(value);
+            if (value !== "__custom__") setProblematicaCustom("");
+          }}
+          onProblematicaCustomChange={setProblematicaCustom}
+          onPropositoChange={setProposito}
+          onToggleInstrumento={(value) => toggleMulti(value, instrSeleccionados, setInstrSeleccionados)}
+          onAjustesChange={setAjustesTexto}
+          onPmcChange={setPmcTexto}
+        />
       )}
 
       {/* ──── STEP 3: Revisar y Generar ──── */}
