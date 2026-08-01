@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createPortal } from "react-dom";
 import { Loader2, X, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
+import ModalShell from "@/components/shared/ModalShell";
 import type { ApiResponse } from "@/types";
 import type {
   AcademicGroup,
@@ -121,11 +121,8 @@ export default function GroupModal({
     }
   };
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}
-    >
+  return (
+    <ModalShell>
       <div className="w-full max-w-md glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col">
         <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-glass)]">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">
@@ -183,7 +180,6 @@ export default function GroupModal({
           </button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </ModalShell>
   );
 }

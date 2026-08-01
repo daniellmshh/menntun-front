@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import ModalShell from "@/components/shared/ModalShell";
 import {
   Building2,
   Plus,
@@ -780,8 +781,8 @@ export default function SchoolsPage() {
       )}
 
       {/* Modal - Create/Edit School */}
-      {mounted && isSchoolModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isSchoolModalOpen && (
+        <ModalShell className="items-center justify-center p-4 overflow-y-auto bg-black/70">
           <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsSchoolModalOpen(false)}
@@ -939,8 +940,7 @@ export default function SchoolsPage() {
               </div>
             </form>
           </div>
-        </div>,
-        document.body
+        </ModalShell>
       )}
 
       {/* Modal - School Detailed View (Tabs: General, Modules, Users) */}
