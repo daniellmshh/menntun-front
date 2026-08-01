@@ -728,12 +728,21 @@ function PlanningDetailContent() {
             Fases del Proyecto
           </h2>
           <div className="space-y-4">
-            {(planning.fases as any[]).map((fase: any, idx: number) => (
-              <div key={idx} className={`border-l-4 pl-4 ${MOMENTO_COLORS[idx % MOMENTO_COLORS.length]}`}>
-                <h3 className="font-semibold text-[var(--text-primary)] mb-2">{fase.nombre}</h3>
-                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{fase.actividades}</p>
-              </div>
-            ))}
+            {planning.fases.map((fase, idx) => {
+              const phase = fase && typeof fase === "object"
+                ? fase as Record<string, unknown>
+                : {};
+              const name = typeof phase.nombre === "string" ? phase.nombre : "Fase";
+              const activities =
+                typeof phase.actividades === "string" ? phase.actividades : "";
+
+              return (
+                <div key={idx} className={`border-l-4 pl-4 ${MOMENTO_COLORS[idx % MOMENTO_COLORS.length]}`}>
+                  <h3 className="font-semibold text-[var(--text-primary)] mb-2">{name}</h3>
+                  <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{activities}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

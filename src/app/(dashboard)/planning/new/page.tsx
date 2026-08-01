@@ -58,6 +58,48 @@ const STEP_LABELS = [
   "Revisar",
 ];
 
+interface AcademicGroupOption {
+  id: string;
+  name: string;
+  section?: string | null;
+  grade?: {
+    name?: string;
+    order?: number;
+  } | null;
+}
+
+interface AcademicSubjectOption {
+  id: string;
+  name: string;
+}
+
+type PlanningStreamEvent =
+  | { type: "token"; content: string }
+  | { type: "status"; message: string }
+  | { type: "done"; planningId: string }
+  | { type: "error"; message: string };
+
+function parsePlanningStreamEvent(raw: string): PlanningStreamEvent | null {
+  const value: unknown = JSON.parse(raw);
+  if (!value || typeof value !== "object" || !("type" in value)) return null;
+
+  const event = value as Record<string, unknown>;
+  if (event.type === "token" && typeof event.content === "string") {
+    return { type: "token", content: event.content };
+  }
+  if (event.type === "status" && typeof event.message === "string") {
+    return { type: "status", message: event.message };
+  }
+  if (event.type === "done" && typeof event.planningId === "string") {
+    return { type: "done", planningId: event.planningId };
+  }
+  if (event.type === "error" && typeof event.message === "string") {
+    return { type: "error", message: event.message };
+  }
+
+  return null;
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 function NewPlanningContent() {
@@ -80,8 +122,8 @@ function NewPlanningContent() {
   const [catalogo, setCatalogo] = useState<PlanningCatalogo | null>(null);
 
   // Academic groups/subjects for integrated mode
-  const [groups, setGroups] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
+  const [groups, setGroups] = useState<AcademicGroupOption[]>([]);
+  const [subjects, setSubjects] = useState<AcademicSubjectOption[]>([]);
 
   // ─── STEP 0: Identificación ────────────────────────────────────────────────
   const [selectedGroupId, setSelectedGroupId] = useState("");
@@ -109,6 +151,13 @@ function NewPlanningContent() {
   const [instrSeleccionados, setInstrSeleccionados] = useState<string[]>([]);
   const [ajustesTexto, setAjustesTexto] = useState("");
   const [pmcTexto, setPmcTexto] = useState("");
+
+  const resetCurricularSelection = () => {
+    setCamposSeleccionados([]);
+    setAddingCampoId("");
+    setAddingContenidoId("");
+    setAddingPdaLiteral("");
+  };
 
   // Load catalog + academic data
   useEffect(() => {
@@ -147,14 +196,6 @@ function NewPlanningContent() {
     };
     loadData();
   }, []);
-
-  // Reset selected fields when the grade changes to prevent inconsistencies
-  useEffect(() => {
-    setCamposSeleccionados([]);
-    setAddingCampoId("");
-    setAddingContenidoId("");
-    setAddingPdaLiteral("");
-  }, [standaloneGradeOrder, selectedGroupId, isStandalone]);
 
   // ─── Campo+contenido helpers ───────────────────────────────────────────────
 
@@ -303,7 +344,8 @@ function NewPlanningContent() {
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
           try {
-            const event = JSON.parse(line.slice(6));
+            const event = parsePlanningStreamEvent(line.slice(6));
+            if (!event) continue;
 
             if (event.type === "token") {
               tokenCount++;
@@ -323,17 +365,22 @@ function NewPlanningContent() {
               clearInterval(statusInterval);
               throw new Error(event.message);
             }
-          } catch (parseErr: any) {
+          } catch (parseErr: unknown) {
             // Ignorar líneas que no sean JSON válido (solo lanzar si es evento de error)
-            if (parseErr?.message && !parseErr.message.includes("JSON")) {
+            if (
+              parseErr instanceof Error &&
+              !parseErr.message.includes("JSON")
+            ) {
               throw parseErr;
             }
           }
         }
       }
       clearInterval(statusInterval);
-    } catch (err: any) {
-      setError(err?.message || "Error al generar la planeación.");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Error al generar la planeación.",
+      );
       setGenerating(false);
       setStreamContent("");
       setStreamProgress(0);
@@ -605,7 +652,10 @@ function NewPlanningContent() {
                   <label className="block text-sm text-[var(--text-secondary)] mb-2">Grupo</label>
                   <select
                     value={selectedGroupId}
-                    onChange={(e) => setSelectedGroupId(e.target.value)}
+                    onChange={(e) => {
+                      resetCurricularSelection();
+                      setSelectedGroupId(e.target.value);
+                    }}
                     className="glass-input w-full"
                   >
                     {groups.map((g) => (
@@ -646,7 +696,10 @@ function NewPlanningContent() {
                   <label className="block text-sm text-[var(--text-secondary)] mb-2">Grado</label>
                   <select
                     value={standaloneGradeOrder}
-                    onChange={(e) => setStandaloneGradeOrder(Number(e.target.value))}
+                    onChange={(e) => {
+                      resetCurricularSelection();
+                      setStandaloneGradeOrder(Number(e.target.value));
+                    }}
                     className="glass-input w-full"
                   >
                     {[1, 2, 3].map((g) => (
