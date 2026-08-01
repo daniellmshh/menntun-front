@@ -29,54 +29,8 @@ import ModuleGuard from "@/components/shared/ModuleGuard";
 import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { ApiResponse, UserRole } from "@/types";
-
-interface Student {
-  id: string;
-  email: string;
-  role: UserRole;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  active: boolean;
-  createdAt: string;
-  schoolId: string;
-  school?: {
-    name: string;
-    code: string;
-  };
-  studentProfile?: {
-    id: string;
-    enrollmentNumber?: string;
-    birthDate?: string;
-    gender?: string;
-    bloodType?: string;
-    address?: string;
-    enrollments?: Array<{
-      id: string;
-      status: string;
-      enrolledAt: string;
-      group: {
-        id: string;
-        name: string;
-        grade: { name: string };
-        schoolYear: { name: string; active: boolean };
-      };
-    }>;
-  };
-}
-
-interface Group {
-  id: string;
-  name: string;
-  grade: { name: string };
-  schoolYear: { name: string; active: boolean };
-}
-
-interface School {
-  id: string;
-  name: string;
-  code: string;
-}
+import type { SchoolOption, Student, StudentGroup } from "../types";
+import StudentFormModal from "./StudentFormModal";
 
 export default function StudentsPage() {
   const { user, isLoading: authLoading } = useAuthStore();
@@ -85,8 +39,8 @@ export default function StudentsPage() {
 
   // List states
   const [students, setStudents] = useState<Student[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [schools, setSchools] = useState<School[]>([]);
+  const [groups, setGroups] = useState<StudentGroup[]>([]);
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -164,7 +118,7 @@ export default function StudentsPage() {
         endpoint += `?${params.join("&")}`;
       }
 
-      const response = await api.get<ApiResponse<Group[]>>(endpoint);
+      const response = await api.get<ApiResponse<StudentGroup[]>>(endpoint);
       setGroups(response.data.data || []);
     } catch (err) {
       console.error("Error fetching groups:", err);
@@ -175,7 +129,7 @@ export default function StudentsPage() {
   const fetchSchools = async () => {
     if (user?.role !== UserRole.SUPER_ADMIN) return;
     try {
-      const response = await api.get<ApiResponse<School[]>>("/schools");
+      const response = await api.get<ApiResponse<SchoolOption[]>>("/schools");
       setSchools(response.data.data || []);
     } catch (err) {
       console.error("Error fetching schools list:", err);
@@ -665,252 +619,42 @@ export default function StudentsPage() {
       )}
 
       {/* Modal - Create/Edit Student */}
-      {mounted && isFormModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
-            <button
-              onClick={() => setIsFormModalOpen(false)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold gradient-text">
-                {formModalMode === "create" ? (t.students?.modal?.createTitle || "Register New Student") : (t.students?.modal?.editTitle || "Edit Student Profile")}
-              </h2>
-            </div>
-
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              {formError && (
-                <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                  {formError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4 max-h-[55vh] overflow-y-auto pr-1 custom-scrollbar">
-                {/* Names */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools?.users?.modal?.firstName || "First Name"} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={studentFirstName}
-                      onChange={(e) => setStudentFirstName(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools?.users?.modal?.lastName || "Last Name"} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={studentLastName}
-                      onChange={(e) => setStudentLastName(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                </div>
-
-                {/* Email (immutable on edit) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools?.users?.modal?.email || "Email Address"} *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={studentEmail}
-                    onChange={(e) => setStudentEmail(e.target.value)}
-                    className="glass-input"
-                    disabled={formSubmitting || formModalMode === "edit"}
-                  />
-                </div>
-
-                {/* Password (create only) */}
-                {formModalMode === "create" && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.passwordLabel || "Temporary Password (min. 6 chars)"} *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={studentPassword}
-                      onChange={(e) => setStudentPassword(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                )}
-
-                {/* Phone & Enrollment Number */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.table?.phone || "Phone"}
-                    </label>
-                    <input
-                      type="text"
-                      value={studentPhone}
-                      onChange={(e) => setStudentPhone(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.enrollmentNumberLabel || "Matrícula"}
-                    </label>
-                    <input
-                      type="text"
-                      value={studentEnrollmentNumber}
-                      onChange={(e) => setStudentEnrollmentNumber(e.target.value)}
-                      className="glass-input font-mono"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                </div>
-
-                {/* School Selector (SUPER_ADMIN only, create mode only) */}
-                {user?.role === UserRole.SUPER_ADMIN && formModalMode === "create" && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.teachers?.details?.schoolName || "School"} *
-                    </label>
-                    <select
-                      value={studentSchoolId}
-                      onChange={(e) => setStudentSchoolId(e.target.value)}
-                      className="glass-input bg-[var(--bg-surface)]"
-                      disabled={formSubmitting}
-                    >
-                      <option value="">Selecciona escuela / Select school</option>
-                      {schools.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* Assign to Group */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.students?.modal?.groupIdLabel || "Assign to Group"}
-                  </label>
-                  <select
-                    value={studentGroupId}
-                    onChange={(e) => setStudentGroupId(e.target.value)}
-                    className="glass-input bg-[var(--bg-surface)]"
-                    disabled={formSubmitting}
-                  >
-                    <option value="">{t.students?.modal?.selectGroupPlaceholder || "Select group..."}</option>
-                    {groups
-                      .filter((g) => {
-                        const targetSchool = user?.role === UserRole.SUPER_ADMIN ? studentSchoolId : user?.schoolId;
-                        return targetSchool ? true : true; // We don't filter in client if not selected
-                      })
-                      .map((g) => (
-                        <option key={g.id} value={g.id}>
-                          {g.grade?.name} {g.name} ({g.schoolYear?.name})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {/* Additional Profile Info */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.birthDateLabel || "Birth Date"}
-                    </label>
-                    <input
-                      type="date"
-                      value={studentBirthDate}
-                      onChange={(e) => setStudentBirthDate(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.genderLabel || "Gender"}
-                    </label>
-                    <select
-                      value={studentGender}
-                      onChange={(e) => setStudentGender(e.target.value)}
-                      className="glass-input bg-[var(--bg-surface)]"
-                      disabled={formSubmitting}
-                    >
-                      <option value="">{t.students?.modal?.selectGenderPlaceholder || "Select gender..."}</option>
-                      <option value="MALE">MALE / MASCULINO</option>
-                      <option value="FEMALE">FEMALE / FEMENINO</option>
-                      <option value="OTHER">OTHER / OTRO</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-1 space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.bloodTypeLabel || "Blood Type"}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="O+, A- ..."
-                      value={studentBloodType}
-                      onChange={(e) => setStudentBloodType(e.target.value)}
-                      className="glass-input font-mono"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                  <div className="col-span-2 space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.students?.modal?.addressLabel || "Address"}
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="123 Street Address"
-                      value={studentAddress}
-                      onChange={(e) => setStudentAddress(e.target.value)}
-                      className="glass-input"
-                      disabled={formSubmitting}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-glass)]">
-                <button
-                  type="button"
-                  onClick={() => setIsFormModalOpen(false)}
-                  disabled={formSubmitting}
-                  className="glass-button-secondary py-2 px-5 text-sm cursor-pointer"
-                >
-                  {t.students?.modal?.cancel || "Cancel"}
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="glass-button py-2 px-5 text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  {formSubmitting && <Loader2 size={16} className="animate-spin" />}
-                  <span>{formSubmitting ? (t.students?.modal?.loading || "Processing...") : (t.students?.modal?.save || "Save Profile")}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
+      {mounted && isFormModalOpen && (
+        <StudentFormModal
+          mode={formModalMode}
+          t={t}
+          error={formError}
+          submitting={formSubmitting}
+          canSelectSchool={user?.role === UserRole.SUPER_ADMIN}
+          schools={schools}
+          groups={groups}
+          email={studentEmail}
+          password={studentPassword}
+          firstName={studentFirstName}
+          lastName={studentLastName}
+          phone={studentPhone}
+          schoolId={studentSchoolId}
+          enrollmentNumber={studentEnrollmentNumber}
+          birthDate={studentBirthDate}
+          gender={studentGender}
+          bloodType={studentBloodType}
+          address={studentAddress}
+          groupId={studentGroupId}
+          onEmailChange={setStudentEmail}
+          onPasswordChange={setStudentPassword}
+          onFirstNameChange={setStudentFirstName}
+          onLastNameChange={setStudentLastName}
+          onPhoneChange={setStudentPhone}
+          onSchoolIdChange={setStudentSchoolId}
+          onEnrollmentNumberChange={setStudentEnrollmentNumber}
+          onBirthDateChange={setStudentBirthDate}
+          onGenderChange={setStudentGender}
+          onBloodTypeChange={setStudentBloodType}
+          onAddressChange={setStudentAddress}
+          onGroupIdChange={setStudentGroupId}
+          onClose={() => setIsFormModalOpen(false)}
+          onSubmit={handleFormSubmit}
+        />
       )}
 
       {/* Modal - Student Detailed View */}
