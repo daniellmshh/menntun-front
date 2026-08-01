@@ -32,6 +32,7 @@ import { useLanguageStore } from "@/store/language.store";
 import { useAuthStore } from "@/store/auth.store";
 import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import { sanitizeInput } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ const STEP_LABELS = [
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 
-export default function NewPlanningPage() {
+function NewPlanningContent() {
   const router = useRouter();
   const { language } = useLanguageStore();
   const { user } = useAuthStore();
@@ -1185,5 +1186,13 @@ export default function NewPlanningPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function NewPlanningPage() {
+  return (
+    <ModuleGuard moduleKey="planning">
+      <NewPlanningContent />
+    </ModuleGuard>
   );
 }

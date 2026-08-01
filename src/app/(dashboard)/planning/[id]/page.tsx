@@ -43,6 +43,7 @@ import { PlanningModalidadLabels } from "@/modules/planning/constants";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import { sanitizeInput } from "@/lib/utils";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ const StatusBadge = ({ status }: { status: PlanningStatus }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function PlanningDetailPage() {
+function PlanningDetailContent() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -749,5 +750,13 @@ export default function PlanningDetailPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function PlanningDetailPage() {
+  return (
+    <ModuleGuard moduleKey="planning">
+      <PlanningDetailContent />
+    </ModuleGuard>
   );
 }

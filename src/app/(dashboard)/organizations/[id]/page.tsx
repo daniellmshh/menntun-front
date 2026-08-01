@@ -17,6 +17,9 @@ export default function OrganizationDetailsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"schools" | "admins">("schools");
+  const canViewOrganization =
+    user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ORG_ADMIN;
+  const canManageOrganization = user?.role === UserRole.SUPER_ADMIN;
 
   // Modals state
   const [isAssignSchoolModalOpen, setIsAssignSchoolModalOpen] = useState(false);
@@ -37,7 +40,7 @@ export default function OrganizationDetailsPage() {
       const res = await api.get<ApiResponse<any>>(`/organizations/${id}`);
       return res.data.data;
     },
-    enabled: !!id,
+    enabled: !!id && canViewOrganization,
   });
 
   const { data: allSchools } = useQuery({
@@ -47,7 +50,7 @@ export default function OrganizationDetailsPage() {
       // Optionally filter only schools without organization if backend returns all
       return res.data.data?.filter(s => s.organizationId === null) || [];
     },
-    enabled: isAssignSchoolModalOpen,
+    enabled: canManageOrganization && isAssignSchoolModalOpen,
   });
 
   const assignSchoolMutation = useMutation({
@@ -79,6 +82,16 @@ export default function OrganizationDetailsPage() {
       setAdminPassword("");
     },
   });
+
+  if (!canViewOrganization) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-[var(--text-secondary)]">
+          No tienes permisos para ver esta página.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) return <Loader />;
 
@@ -140,11 +153,13 @@ export default function OrganizationDetailsPage() {
       <div className="pt-4">
         {activeTab === "schools" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <button onClick={() => setIsAssignSchoolModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--bg-panel)] hover:bg-black/10 border border-[var(--border-glass)] rounded-xl transition-all text-[var(--text-primary)]">
-                <Plus className="w-4 h-4" /> Asignar Plantel
-              </button>
-            </div>
+            {canManageOrganization && (
+              <div className="flex justify-end">
+                <button onClick={() => setIsAssignSchoolModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--bg-panel)] hover:bg-black/10 border border-[var(--border-glass)] rounded-xl transition-all text-[var(--text-primary)]">
+                  <Plus className="w-4 h-4" /> Asignar Plantel
+                </button>
+              </div>
+            )}
             
             {org.schools?.length === 0 ? (
               <div className="p-12 text-center text-[var(--text-secondary)] glass-panel border border-[var(--border-glass)]">No hay planteles asignados.</div>
@@ -168,11 +183,13 @@ export default function OrganizationDetailsPage() {
 
         {activeTab === "admins" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <button onClick={() => setIsCreateAdminModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30 rounded-xl transition-all">
-                <Plus className="w-4 h-4" /> Nuevo ORG_ADMIN
-              </button>
-            </div>
+            {canManageOrganization && (
+              <div className="flex justify-end">
+                <button onClick={() => setIsCreateAdminModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30 rounded-xl transition-all">
+                  <Plus className="w-4 h-4" /> Nuevo ORG_ADMIN
+                </button>
+              </div>
+            )}
             
             {org.users?.length === 0 ? (
               <div className="p-12 text-center text-[var(--text-secondary)] glass-panel border border-[var(--border-glass)]">No hay administradores registrados.</div>

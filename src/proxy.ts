@@ -31,8 +31,9 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginPage = request.nextUrl.pathname === "/login";
-  const isPublicRoute = isLoginPage || request.nextUrl.pathname === "/";
+  const pathname = request.nextUrl.pathname;
+  const isLoginPage = pathname === "/login";
+  const isPublicRoute = ["/", "/login", "/privacy", "/terms"].includes(pathname);
 
   if (!user && !isPublicRoute) {
     // Redirect unauthenticated users to login
@@ -44,7 +45,7 @@ export async function proxy(request: NextRequest) {
   const role = user?.user_metadata?.role;
   const isOrgAdmin = role === "ORG_ADMIN";
   const activeSchoolId = request.cookies.get("menntun-active-school")?.value;
-  const isSelectCampusPage = request.nextUrl.pathname === "/select-campus";
+  const isSelectCampusPage = pathname === "/select-campus";
 
   if (user && isOrgAdmin && !activeSchoolId && !isSelectCampusPage && !isPublicRoute) {
     const url = request.nextUrl.clone();
