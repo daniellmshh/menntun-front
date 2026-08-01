@@ -92,18 +92,7 @@ export default function DashboardLayout({
 
       if (!useAuthStore.getState().user) {
         try {
-          const userMetadata = session.user.user_metadata || {};
-          const schoolId = userMetadata.schoolId || "DEMO-001";
-          const role = (userMetadata.role as UserRole) || UserRole.SUPER_ADMIN;
-          const firstName = userMetadata.firstName || "John";
-          const lastName = userMetadata.lastName || "Doe";
-
-          const syncResponse = await api.post<ApiResponse<RequestUser>>("/auth/sync", {
-            schoolId,
-            role,
-            firstName,
-            lastName,
-          });
+          const syncResponse = await api.post<ApiResponse<RequestUser>>("/auth/sync");
           
           setUser(syncResponse.data.data);
         } catch (error) {
