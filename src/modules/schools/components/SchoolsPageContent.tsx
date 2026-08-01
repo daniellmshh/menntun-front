@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import ModalShell from "@/components/shared/ModalShell";
+import SchoolFormModal from "./SchoolFormModal";
+import SchoolUserFormModal, { type SchoolUserPosition } from "./SchoolUserFormModal";
 import {
   Building2,
   Plus,
@@ -121,7 +122,7 @@ export default function SchoolsPage() {
   const [userEmail, setUserEmail] = useState("");
   const [userPhone, setUserPhone] = useState("");
   const [userPassword, setUserPassword] = useState("");
-  const [userPosition, setUserPosition] = useState<"admin" | "director" | "treasurer" | "teacher">("admin");
+  const [userPosition, setUserPosition] = useState<SchoolUserPosition>("admin");
   const [userActive, setUserActive] = useState(true);
 
   // Action loaders (keyed by item ID)
@@ -782,165 +783,28 @@ export default function SchoolsPage() {
 
       {/* Modal - Create/Edit School */}
       {mounted && isSchoolModalOpen && (
-        <ModalShell className="items-center justify-center p-4 overflow-y-auto bg-black/70">
-          <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
-            <button
-              onClick={() => setIsSchoolModalOpen(false)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold gradient-text">
-                {schoolModalMode === "create" ? t.schools.modal.createTitle : t.schools.modal.editTitle}
-              </h2>
-            </div>
-
-            <form onSubmit={handleSchoolSubmit} className="space-y-4">
-              {schoolFormError && (
-                <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                  {schoolFormError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4">
-                {/* School Name */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.modal.nameLabel} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Colegio ..."
-                    value={schoolName}
-                    onChange={(e) => setSchoolName(e.target.value)}
-                    className="glass-input"
-                    disabled={schoolSubmitting}
-                  />
-                </div>
-
-                {/* Is Independent Teacher Checkbox */}
-                {schoolModalMode === "create" && (
-                  <label className="flex items-center gap-2 cursor-pointer mt-2 bg-white/[0.02] p-3 rounded-lg border border-[var(--border-glass)] hover:bg-white/[0.05] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={isIndependentTeacher}
-                      onChange={(e) => {
-                        setIsIndependentTeacher(e.target.checked);
-                        if (e.target.checked) setSchoolCode("");
-                      }}
-                      disabled={schoolSubmitting}
-                      className="w-4 h-4 rounded text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] border-gray-600 bg-gray-700"
-                    />
-                    <span className="text-sm font-medium text-[var(--text-primary)]">
-                      {t.schools.modal.isIndependent || "¿Es Maestro Independiente? (Workspace Personal)"}
-                    </span>
-                  </label>
-                )}
-
-                {/* Code Identifier */}
-                {!isIndependentTeacher && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.modal.codeLabel} *
-                    </label>
-                    <input
-                      type="text"
-                      required={!isIndependentTeacher}
-                      placeholder="COLEGIO-01"
-                      value={schoolCode}
-                      onChange={(e) => setSchoolCode(e.target.value)}
-                      className="glass-input font-mono uppercase"
-                      disabled={schoolSubmitting || schoolModalMode === "edit"}
-                    />
-                  </div>
-                )}
-
-                {/* Contact Email */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.modal.emailLabel}
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="contact@school.com"
-                    value={schoolEmail}
-                    onChange={(e) => setSchoolEmail(e.target.value)}
-                    className="glass-input"
-                    disabled={schoolSubmitting}
-                  />
-                </div>
-
-                {/* Phone Number */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.modal.phoneLabel}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="+354 ..."
-                    value={schoolPhone}
-                    onChange={(e) => setSchoolPhone(e.target.value)}
-                    className="glass-input"
-                    disabled={schoolSubmitting}
-                  />
-                </div>
-
-                {/* Address */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.modal.addressLabel}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="123 Education St."
-                    value={schoolAddress}
-                    onChange={(e) => setSchoolAddress(e.target.value)}
-                    className="glass-input"
-                    disabled={schoolSubmitting}
-                  />
-                </div>
-
-                {/* Logo URL */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    Logo Image URL
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="https://..."
-                    value={schoolLogoUrl}
-                    onChange={(e) => setSchoolLogoUrl(e.target.value)}
-                    className="glass-input"
-                    disabled={schoolSubmitting}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-glass)]">
-                <button
-                  type="button"
-                  onClick={() => setIsSchoolModalOpen(false)}
-                  disabled={schoolSubmitting}
-                  className="glass-button-secondary py-2 px-5 text-sm cursor-pointer"
-                >
-                  {t.schools.modal.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={schoolSubmitting}
-                  className="glass-button py-2 px-5 text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  {schoolSubmitting && <Loader2 size={16} className="animate-spin" />}
-                  <span>{schoolSubmitting ? t.schools.modal.loading : t.schools.modal.save}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </ModalShell>
+        <SchoolFormModal
+          mode={schoolModalMode}
+          t={t}
+          error={schoolFormError}
+          submitting={schoolSubmitting}
+          name={schoolName}
+          code={schoolCode}
+          address={schoolAddress}
+          phone={schoolPhone}
+          email={schoolEmail}
+          logoUrl={schoolLogoUrl}
+          isIndependentTeacher={isIndependentTeacher}
+          onNameChange={setSchoolName}
+          onCodeChange={setSchoolCode}
+          onAddressChange={setSchoolAddress}
+          onPhoneChange={setSchoolPhone}
+          onEmailChange={setSchoolEmail}
+          onLogoUrlChange={setSchoolLogoUrl}
+          onIndependentTeacherChange={setIsIndependentTeacher}
+          onClose={() => setIsSchoolModalOpen(false)}
+          onSubmit={handleSchoolSubmit}
+        />
       )}
 
       {/* Modal - School Detailed View (Tabs: General, Modules, Users) */}
@@ -1248,179 +1112,29 @@ export default function SchoolsPage() {
       )}
 
       {/* Modal - Create/Edit User */}
-      {mounted && isUserModalOpen && detailSchool && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-panel max-w-md w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
-            <button
-              onClick={() => setIsUserModalOpen(false)}
-              className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="space-y-1">
-              <h2 className="text-xl font-bold gradient-text">
-                {userModalMode === "create" ? t.schools.users.modal.createTitle : t.schools.users.modal.editTitle}
-              </h2>
-            </div>
-
-            <form onSubmit={handleUserSubmit} className="space-y-4">
-              {userFormError && (
-                <div className="p-3.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold">
-                  {userFormError}
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-4">
-                {/* Names */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.users.modal.firstName} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Jane"
-                      value={userFirstName}
-                      onChange={(e) => setUserFirstName(e.target.value)}
-                      className="glass-input"
-                      disabled={userSubmitting}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.users.modal.lastName} *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Doe"
-                      value={userLastName}
-                      onChange={(e) => setUserLastName(e.target.value)}
-                      className="glass-input"
-                      disabled={userSubmitting}
-                    />
-                  </div>
-                </div>
-
-                {/* Email (only in create mode) */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.users.modal.email} *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="name@school.com"
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    className="glass-input"
-                    disabled={userSubmitting || userModalMode === "edit"}
-                  />
-                </div>
-
-                {/* Password (only in create mode) */}
-                {userModalMode === "create" && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                      {t.schools.users.modal.password} *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={userPassword}
-                      onChange={(e) => setUserPassword(e.target.value)}
-                      className="glass-input"
-                      disabled={userSubmitting}
-                    />
-                  </div>
-                )}
-
-                {/* Phone */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.users.modal.phone}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="+354 ..."
-                    value={userPhone}
-                    onChange={(e) => setUserPhone(e.target.value)}
-                    className="glass-input"
-                    disabled={userSubmitting}
-                  />
-                </div>
-
-                {/* Position selection - mapped to DB roles */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {t.schools.users.modal.role} *
-                  </label>
-                  <select
-                    value={userPosition}
-                    onChange={(e) => setUserPosition(e.target.value as any)}
-                    className="glass-input bg-[var(--bg-surface)]"
-                    disabled={userSubmitting}
-                  >
-                    <option value="admin">{t.schools.users.modal.positionOptions.admin}</option>
-                    <option value="director">{t.schools.users.modal.positionOptions.director}</option>
-                    <option value="treasurer">{t.schools.users.modal.positionOptions.treasurer}</option>
-                    <option value="teacher">{t.schools.users.modal.positionOptions.teacher}</option>
-                  </select>
-                </div>
-
-                {/* Status toggle (only in edit mode) */}
-                {userModalMode === "edit" && (
-                  <div className="flex items-center justify-between p-3 rounded-xl border border-[var(--border-glass)] bg-black/10">
-                    <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase">
-                      {t.schools.users.modal.status}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setUserActive(!userActive)}
-                      className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
-                    >
-                      {userActive ? (
-                        <ToggleRight size={32} className="text-[var(--accent-success)]" />
-                      ) : (
-                        <ToggleLeft size={32} className="text-[var(--text-muted)]" />
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-glass)]">
-                <button
-                  type="button"
-                  onClick={() => setIsUserModalOpen(false)}
-                  disabled={userSubmitting}
-                  className="glass-button-secondary py-2 px-5 text-sm cursor-pointer"
-                >
-                  {t.schools.users.modal.cancel}
-                </button>
-                <button
-                  type="submit"
-                  disabled={userSubmitting}
-                  className="glass-button py-2 px-5 text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  {userSubmitting && <Loader2 size={16} className="animate-spin" />}
-                  <span>
-                    {userSubmitting
-                      ? t.schools.users.modal.loading
-                      : userModalMode === "create"
-                      ? t.schools.users.modal.save
-                      : t.schools.users.modal.update}
-                  </span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
+      {mounted && isUserModalOpen && detailSchool && (
+        <SchoolUserFormModal
+          mode={userModalMode}
+          t={t}
+          error={userFormError}
+          submitting={userSubmitting}
+          firstName={userFirstName}
+          lastName={userLastName}
+          email={userEmail}
+          password={userPassword}
+          phone={userPhone}
+          position={userPosition}
+          active={userActive}
+          onFirstNameChange={setUserFirstName}
+          onLastNameChange={setUserLastName}
+          onEmailChange={setUserEmail}
+          onPasswordChange={setUserPassword}
+          onPhoneChange={setUserPhone}
+          onPositionChange={setUserPosition}
+          onActiveChange={setUserActive}
+          onClose={() => setIsUserModalOpen(false)}
+          onSubmit={handleUserSubmit}
+        />
       )}
       </div>
     </ModuleGuard>
