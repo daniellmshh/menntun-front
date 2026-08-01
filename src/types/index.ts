@@ -33,6 +33,6 @@ export interface RequestUser {
 
 export interface ApiResponse<T> {
   data: T;
-  meta: any | null;
+  meta: Record<string, unknown> | null;
   error: string | null;
 }

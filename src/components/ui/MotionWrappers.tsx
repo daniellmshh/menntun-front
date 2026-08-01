@@ -1,7 +1,15 @@
 "use client";
 
 import React from "react";
-import { motion, Variants } from "framer-motion";
+import { m, Variants } from "framer-motion";
+
+type MotionTag = "div" | "section" | "h1" | "h2" | "p";
+
+interface MotionWrapperProps {
+  children: React.ReactNode;
+  className?: string;
+  as?: MotionTag;
+}
 
 const fadeUpVariants: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -28,8 +36,13 @@ const staggerContainerVariants: Variants = {
   }
 };
 
-export function StaggerContainer({ children, className, as: Component = "div", id }: { children: React.ReactNode; className?: string; as?: any; id?: string }) {
-  const MotionComponent = motion(Component as any);
+export function StaggerContainer({
+  children,
+  className,
+  as = "div",
+  id,
+}: MotionWrapperProps & { id?: string }) {
+  const MotionComponent = m[as];
   return (
     <MotionComponent
       id={id}
@@ -44,8 +57,8 @@ export function StaggerContainer({ children, className, as: Component = "div", i
   );
 }
 
-export function FadeUp({ children, className, as: Component = "div" }: { children: React.ReactNode; className?: string; as?: any }) {
-  const MotionComponent = motion(Component as any);
+export function FadeUp({ children, className, as = "div" }: MotionWrapperProps) {
+  const MotionComponent = m[as];
   return (
     <MotionComponent variants={fadeUpVariants} className={className}>
       {children}
@@ -53,8 +66,8 @@ export function FadeUp({ children, className, as: Component = "div" }: { childre
   );
 }
 
-export function FadeLeft({ children, className, as: Component = "div" }: { children: React.ReactNode; className?: string; as?: any }) {
-  const MotionComponent = motion(Component as any);
+export function FadeLeft({ children, className, as = "div" }: MotionWrapperProps) {
+  const MotionComponent = m[as];
   return (
     <MotionComponent variants={fadeLeftVariants} className={className}>
       {children}
@@ -62,8 +75,8 @@ export function FadeLeft({ children, className, as: Component = "div" }: { child
   );
 }
 
-export function FadeRight({ children, className, as: Component = "div" }: { children: React.ReactNode; className?: string; as?: any }) {
-  const MotionComponent = motion(Component as any);
+export function FadeRight({ children, className, as = "div" }: MotionWrapperProps) {
+  const MotionComponent = m[as];
   return (
     <MotionComponent variants={fadeRightVariants} className={className}>
       {children}

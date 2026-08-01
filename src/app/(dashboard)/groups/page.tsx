@@ -11,21 +11,16 @@ import {
   X,
   CheckCircle,
   XCircle,
-  Building2,
   User,
   Users,
   Calendar,
-  Sparkles,
   ChevronRight,
-  Activity,
   Bookmark,
   ShieldCheck,
   UserMinus,
   UserPlus,
   BookOpen,
-  Loader2,
   Upload,
-  Hash,
   FileSpreadsheet,
   ToggleLeft,
   ToggleRight,
@@ -39,312 +34,17 @@ import { useLanguageStore } from "@/store/language.store";
 import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
 import { translations } from "@/lib/translations";
 import { ApiResponse, UserRole } from "@/types";
+import GroupAlertBanner from "@/modules/academic/components/GroupAlertBanner";
+import GroupModal from "@/modules/academic/components/GroupModal";
+import type {
+  AcademicGroup,
+  Grade,
+  School,
+  SchoolYear,
+  Teacher,
+} from "@/modules/academic/types";
 
-// ─── TYPES ──────────────────────────────────────────────────────────
-
-interface School {
-  id: string;
-  name: string;
-  code: string;
-}
-
-interface Grade {
-  id: string;
-  schoolId: string;
-  name: string;
-  level: string | null;
-}
-
-interface SchoolYear {
-  id: string;
-  schoolId: string;
-  name: string;
-  active: boolean;
-}
-
-interface Teacher {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  teacherProfile?: {
-    id: string;
-  };
-}
-
-interface GroupTeacher {
-  teacherProfileId: string;
-  isHomeroom: boolean;
-  teacherProfile: {
-    id: string;
-    user: {
-      firstName: string;
-      lastName: string;
-      email: string;
-    };
-  };
-}
-
-interface Group {
-  id: string;
-  schoolId: string;
-  gradeId: string;
-  schoolYearId: string;
-  name: string;
-  maxStudents: number | null;
-  grade?: { name: string; level: string | null };
-  schoolYear?: { name: string; active: boolean };
-  school?: { name: string; code: string };
-  teachers?: GroupTeacher[];
-  _count?: { enrollments: number; teachers?: number };
-}
-
-// ─── HELPERS ────────────────────────────────────────────────────────
-
-function AlertBanner({
-  message,
-  type,
-  onClose,
-}: {
-  message: string;
-  type: "success" | "error";
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div
-      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-main text-sm font-medium transition-all duration-300
-      ${
-        type === "success"
-          ? "bg-[hsla(142,72%,45%,0.12)] border-[hsla(142,72%,45%,0.25)] text-[hsl(142,72%,60%)]"
-          : "bg-[hsla(354,85%,56%,0.12)] border-[hsla(354,85%,56%,0.25)] text-[hsl(354,85%,70%)]"
-      }`}
-    >
-      {type === "success" ? <CheckCircle size={16} /> : <XCircle size={16} />}
-      {message}
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
-
-// ─── CREATE / EDIT MODAL ────────────────────────────────────────────
-
-function GroupModal({
-  group,
-  schools,
-  grades,
-  schoolYears,
-  isSuperAdmin,
-  currentSchoolId,
-  onClose,
-  onSaved,
-  t,
-}: {
-  group: Group | null;
-  schools: School[];
-  grades: Grade[];
-  schoolYears: SchoolYear[];
-  isSuperAdmin: boolean;
-  currentSchoolId: string;
-  onClose: () => void;
-  onSaved: (g: Group) => void;
-  t: any;
-}) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const [form, setForm] = useState({
-    name: group?.name || "",
-    gradeId: group?.gradeId || "",
-    schoolYearId: group?.schoolYearId || "",
-    maxStudents: group?.maxStudents || "",
-    schoolId: group?.schoolId || currentSchoolId || "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  // Filter grades and years based on selected school (Super Admin)
-  const filteredGrades = grades.filter((g) => g.schoolId === form.schoolId);
-  const filteredYears = schoolYears.filter((y) => y.schoolId === form.schoolId && (!group ? y.active : true));
-
-  const handleSave = async () => {
-    if (!form.name || !form.gradeId || !form.schoolYearId) {
-      setError("Completa todos los campos requeridos.");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      let res: any;
-      if (group) {
-        res = await api.patch<ApiResponse<Group>>(`/academic/groups/${group.id}`, {
-          name: form.name,
-          gradeId: form.gradeId,
-          maxStudents: form.maxStudents ? parseInt(form.maxStudents.toString()) : null,
-        });
-      } else {
-        const payload: any = {
-          name: form.name,
-          gradeId: form.gradeId,
-          schoolYearId: form.schoolYearId,
-          maxStudents: form.maxStudents ? parseInt(form.maxStudents.toString()) : null,
-        };
-        if (isSuperAdmin && form.schoolId) {
-          payload.schoolId = form.schoolId;
-        }
-        res = await api.post<ApiResponse<Group>>("/academic/groups", payload);
-      }
-      onSaved(res.data.data);
-    } catch (e: any) {
-      const data = e?.response?.data;
-      const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
-      setError(msg || data?.error || t.alerts?.errorCreate || "Ocurrió un error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}
-    >
-      <div className="w-full max-w-md glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-glass)]">
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">
-            {group ? t.modal.editTitle : t.modal.createTitle}
-          </h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-[var(--text-secondary)]">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          {error && (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[hsla(354,85%,56%,0.1)] border border-[hsla(354,85%,56%,0.2)] text-[hsl(354,85%,70%)] text-sm">
-              <XCircle size={14} /> {error}
-            </div>
-          )}
-
-          {isSuperAdmin && !group && (
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                {t.modal.schoolLabel}
-              </label>
-              <select
-                value={form.schoolId}
-                onChange={(e) =>
-                  setForm({ ...form, schoolId: e.target.value, gradeId: "", schoolYearId: "" })
-                }
-                className="w-full glass-input text-sm"
-              >
-                <option value="">— Sin asignar (usar mi escuela) —</option>
-                {schools.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-              {t.modal.gradeLabel}
-            </label>
-            <select
-              value={form.gradeId}
-              onChange={(e) => setForm({ ...form, gradeId: e.target.value })}
-              className="w-full glass-input text-sm"
-              disabled={isSuperAdmin && !form.schoolId}
-            >
-              <option value="">Selecciona un grado</option>
-              {filteredGrades.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name} {g.level ? `(${g.level})` : ""}
-                </option>
-              ))}
-            </select>
-            {isSuperAdmin && !form.schoolId && (
-              <span className="text-[10px] text-[var(--text-muted)] mt-1 block">
-                * Selecciona primero una escuela.
-              </span>
-            )}
-          </div>
-
-          {!group && (
-            <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-                {t.modal.schoolYearLabel}
-              </label>
-              <select
-                value={form.schoolYearId}
-                onChange={(e) => setForm({ ...form, schoolYearId: e.target.value })}
-                className="w-full glass-input text-sm"
-                disabled={isSuperAdmin && !form.schoolId}
-              >
-                <option value="">Selecciona un ciclo escolar</option>
-                {filteredYears.map((y) => (
-                  <option key={y.id} value={y.id}>
-                    {y.name} {y.active ? "(Activo)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-              {t.modal.nameLabel}
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Ej. A, B, 101"
-              className="w-full glass-input"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">
-              {t.modal.maxStudentsLabel}
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={form.maxStudents}
-              onChange={(e) => setForm({ ...form, maxStudents: e.target.value })}
-              placeholder="Sin límite"
-              className="w-full glass-input"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="glass-button-secondary">
-            {t.modal.cancel}
-          </button>
-          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading ? (t.modal.loading || "Guardando...") : (t.modal.save || "Guardar")}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-}
+type Group = AcademicGroup;
 
 // ─── DETAILS DRAWER ──────────────────────────────────────────────────
 
@@ -370,7 +70,7 @@ function GroupDetailDrawer({
   onClose,
   t,
 }: {
-  group: Group;
+  group: AcademicGroup;
   onClose: () => void;
   t: any;
 }) {
@@ -410,7 +110,7 @@ function GroupDetailDrawer({
 
   const fetchDetail = useCallback(async () => {
     try {
-      const res = await api.get<ApiResponse<Group>>(`/academic/groups/${group.id}`);
+      const res = await api.get<ApiResponse<AcademicGroup>>(`/academic/groups/${group.id}`);
       setGroup(res.data.data);
     } catch {}
   }, [group.id]);
@@ -1009,7 +709,7 @@ export default function GroupsPage() {
   const canManage =
     user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.SCHOOL_ADMIN;
 
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<AcademicGroup[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [schoolYears, setSchoolYears] = useState<SchoolYear[]>([]);
@@ -1021,8 +721,8 @@ export default function GroupsPage() {
   const [filterYearId, setFilterYearId] = useState("");
 
   const [showModal, setShowModal] = useState(false);
-  const [editGroup, setEditGroup] = useState<Group | null>(null);
-  const [detailGroup, setDetailGroup] = useState<Group | null>(null);
+  const [editGroup, setEditGroup] = useState<AcademicGroup | null>(null);
+  const [detailGroup, setDetailGroup] = useState<AcademicGroup | null>(null);
   const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<Group | null>(null);
@@ -1042,7 +742,7 @@ export default function GroupsPage() {
     setLoading(true);
     try {
       const endpoint = isSuperAdmin ? "/academic/groups/all" : "/academic/groups";
-      const res = await api.get<ApiResponse<Group[]>>(endpoint);
+      const res = await api.get<ApiResponse<AcademicGroup[]>>(endpoint);
       setGroups(res.data.data || []);
     } catch {
       showAlert(t.alerts.errorFetch, "error");
@@ -1077,7 +777,7 @@ export default function GroupsPage() {
     fetchCatalogs();
   }, [fetchGroups, fetchCatalogs]);
 
-  const handleDeleteClick = (group: Group) => {
+  const handleDeleteClick = (group: AcademicGroup) => {
     if (group._count && group._count.enrollments > 0) {
       showAlert("No se puede eliminar el grupo porque tiene alumnos inscritos.", "error");
       return;
@@ -1100,7 +800,7 @@ export default function GroupsPage() {
     }
   };
 
-  const handleSaved = (saved: Group) => {
+  const handleSaved = (saved: AcademicGroup) => {
     setGroups((prev) => {
       const idx = prev.findIndex((g) => g.id === saved.id);
       if (idx >= 0) {
@@ -1141,7 +841,7 @@ export default function GroupsPage() {
       <div className="flex flex-col h-full space-y-6">
         {/* Alert Banner */}
         {alert && (
-          <AlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
+          <GroupAlertBanner message={alert.msg} type={alert.type} onClose={() => setAlert(null)} />
         )}
 
         {/* Header section */}
@@ -1410,7 +1110,7 @@ export default function GroupsPage() {
             setEditGroup(null);
           }}
           onSaved={handleSaved}
-          t={t}
+          translations={t}
         />
       )}
 

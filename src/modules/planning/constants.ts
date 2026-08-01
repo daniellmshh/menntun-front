@@ -6,6 +6,7 @@ import {
   Grid,
   BookOpen,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const PlanningModalidadLabels: Record<string, string> = {
   PROYECTOS: "Proyectos",
@@ -16,7 +17,7 @@ export const PlanningModalidadLabels: Record<string, string> = {
   UNIDADES_DIDACTICAS: "Unidades Didácticas",
 };
 
-export const PlanningModalidadIcons: Record<string, any> = {
+export const PlanningModalidadIcons: Record<string, LucideIcon> = {
   PROYECTOS: FolderKanban,
   ABJ: Gamepad2,
   CENTROS_INTERES: Target,
