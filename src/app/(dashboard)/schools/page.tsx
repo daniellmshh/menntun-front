@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Building2,
   Plus,
@@ -74,6 +75,8 @@ export default function SchoolsPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Create/Edit School Modal states
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
   const [schoolModalMode, setSchoolModalMode] = useState<"create" | "edit">("create");
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
@@ -777,8 +780,8 @@ export default function SchoolsPage() {
       )}
 
       {/* Modal - Create/Edit School */}
-      {isSchoolModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isSchoolModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsSchoolModalOpen(false)}
@@ -936,12 +939,13 @@ export default function SchoolsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal - School Detailed View (Tabs: General, Modules, Users) */}
-      {isDetailModalOpen && detailSchool && (
-        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      {mounted && isDetailModalOpen && detailSchool && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-3xl w-full p-6 border border-[var(--border-glass)] relative flex flex-col max-h-[85vh] overflow-hidden animate-scale-up">
             <button
               onClick={() => setIsDetailModalOpen(false)}
@@ -1239,12 +1243,13 @@ export default function SchoolsPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal - Create/Edit User */}
-      {isUserModalOpen && detailSchool && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isUserModalOpen && detailSchool && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-md w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsUserModalOpen(false)}
@@ -1414,7 +1419,8 @@ export default function SchoolsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </ModuleGuard>

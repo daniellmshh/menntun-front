@@ -20,6 +20,8 @@ import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import { createPortal } from "react-dom";
 import { translations } from "@/lib/translations";
 import { ApiResponse, UserRole } from "@/types";
 
@@ -92,6 +94,9 @@ function GradeModal({
   onSaved: (g: Grade) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const predefinedLevels = ["PREESCOLAR", "PRIMARIA", "SECUNDARIA"];
   
   const initialSelectValue = !grade?.level 
@@ -147,7 +152,9 @@ function GradeModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}
@@ -244,7 +251,8 @@ function GradeModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -267,6 +275,13 @@ export default function GradesCatalogPage() {
   const [showModal, setShowModal] = useState(false);
   const [editGrade, setEditGrade] = useState<Grade | null>(null);
   const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Grade | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showAlert = useCallback((msg: string, type: "success" | "error") => {
     setAlert({ msg, type });
@@ -299,18 +314,26 @@ export default function GradesCatalogPage() {
     fetchSchools();
   }, [fetchGrades, fetchSchools]);
 
-  const handleDelete = async (grade: Grade) => {
+  const handleDeleteClick = (grade: Grade) => {
     if (grade._count && grade._count.groups > 0) {
       showAlert(t.alerts.errorDelete, "error");
       return;
     }
-    if (!confirm("¿Estás seguro de que deseas eliminar este grado?")) return;
+    setDeleteTarget(grade);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await api.delete(`/academic/grades/${grade.id}`);
-      setGrades((prev) => prev.filter((g) => g.id !== grade.id));
+      await api.delete(`/academic/grades/${deleteTarget.id}`);
+      setGrades((prev) => prev.filter((g) => g.id !== deleteTarget.id));
       showAlert(t.alerts.successDelete, "success");
+      setDeleteTarget(null);
     } catch (e: any) {
       showAlert(e?.response?.data?.error || t.alerts.errorDelete, "error");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -508,8 +531,8 @@ export default function GradesCatalogPage() {
                             <Edit2 size={15} />
                           </button>
                           <button
-                            onClick={() => handleDelete(g)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-[var(--text-muted)] hover:text-[var(--accent-danger)] transition-colors"
+                            onClick={() => handleDeleteClick(g)}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[hsla(354,85%,56%,0.1)] hover:text-[hsl(354,85%,60%)] transition-colors"
                             title="Eliminar Grado"
                           >
                             <Trash2 size={15} />
@@ -526,7 +549,22 @@ export default function GradesCatalogPage() {
       </div>
 
       {/* Create / Edit Modal */}
-      {showModal && (
+      {/* Delete Confirmation Modal */}
+      {mounted && deleteTarget && createPortal(
+        <ConfirmDeleteModal
+          title="Eliminar Grado"
+          description={
+            <>
+              ¿Estás seguro de que deseas eliminar el grado <strong className="text-[var(--text-primary)]">"{deleteTarget.name}"</strong>?
+            </>
+          }
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+          isLoading={deleteLoading}
+        />
+      , document.body)}
+
+      {(showModal || editGrade) && (
         <GradeModal
           grade={editGrade}
           schools={schools}

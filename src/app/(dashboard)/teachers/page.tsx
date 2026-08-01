@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   ClipboardList,
   Plus,
@@ -105,6 +106,8 @@ export default function TeachersPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   // Create/Edit Form Modal states
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formModalMode, setFormModalMode] = useState<"create" | "edit">("create");
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -705,8 +708,8 @@ export default function TeachersPage() {
       )}
 
       {/* Modal - Create/Edit Teacher */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isFormModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsFormModalOpen(false)}
@@ -893,12 +896,13 @@ export default function TeachersPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal - Teacher Detailed View (Tabs: General, Permissions, Assignments) */}
-      {isDetailModalOpen && detailTeacher && (
-        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      {mounted && isDetailModalOpen && detailTeacher && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-3xl w-full p-6 border border-[var(--border-glass)] relative flex flex-col max-h-[85vh] overflow-hidden animate-scale-up">
             <button
               onClick={() => setIsDetailModalOpen(false)}
@@ -1184,7 +1188,8 @@ export default function TeachersPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </ModuleGuard>

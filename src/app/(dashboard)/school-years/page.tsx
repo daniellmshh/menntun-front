@@ -26,6 +26,8 @@ import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import { createPortal } from "react-dom";
 import { translations } from "@/lib/translations";
 import { ApiResponse, UserRole } from "@/types";
 
@@ -171,6 +173,8 @@ function SchoolYearDetail({
   onUpdated: (updated: SchoolYear) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [showAddPeriod, setShowAddPeriod] = useState(false);
   const [periodForm, setPeriodForm] = useState({ name: "", startDate: "", endDate: "", order: 1 });
   const [loading, setLoading] = useState(false);
@@ -232,7 +236,9 @@ function SchoolYearDetail({
 
   const sortedPeriods = [...(year.periods || [])].sort((a, b) => a.order - b.order);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
       <div
         className="w-full max-w-2xl glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col"
@@ -394,7 +400,8 @@ function SchoolYearDetail({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -415,6 +422,8 @@ function SchoolYearModal({
   onSaved: (y: SchoolYear) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [form, setForm] = useState({
     name: year?.name || "",
     startDate: year ? year.startDate.split("T")[0] : "",
@@ -483,7 +492,9 @@ function SchoolYearModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
       <div className="w-full max-w-xl glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col" style={{ maxHeight: "90vh" }}>
         {/* Header */}
@@ -579,7 +590,8 @@ function SchoolYearModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -692,39 +704,15 @@ export default function SchoolYearsPage() {
 
       {/* Modals */}
       {/* Delete Confirmation Modal */}
-      {yearToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
-          <div className="w-full max-w-sm glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col overflow-hidden animate-fade-in scale-in">
-            <div className="p-6 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[hsla(354,85%,56%,0.1)] border border-[hsla(354,85%,56%,0.2)] flex items-center justify-center mx-auto text-[var(--accent-danger)]">
-                <Trash2 size={32} />
-              </div>
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">
-                {t.detail.deleteYearConfirm || "¿Eliminar Ciclo Escolar?"}
-              </h2>
-              <p className="text-sm text-[var(--text-secondary)]">
-                Esta acción no se puede deshacer. Se eliminarán también todos los periodos asociados.
-              </p>
-            </div>
-            <div className="flex items-center justify-between gap-3 p-4 border-t border-[var(--border-glass)] bg-black/5">
-              <button 
-                onClick={() => setYearToDelete(null)} 
-                disabled={isDeleting}
-                className="flex-1 glass-button-secondary text-sm py-2"
-              >
-                {t.modal.cancel || "Cancelar"}
-              </button>
-              <button 
-                onClick={confirmDelete}
-                disabled={isDeleting} 
-                className="flex-1 py-2 px-4 rounded-lg bg-[var(--accent-danger)] text-white font-semibold text-sm hover:bg-red-600 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
-              >
-                {isDeleting ? "..." : (t.detail.deleteYear || "Eliminar")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {yearToDelete && createPortal(
+        <ConfirmDeleteModal
+          title={t.detail.deleteYearConfirm || "¿Eliminar Ciclo Escolar?"}
+          description="Esta acción no se puede deshacer. Se eliminarán también todos los periodos asociados."
+          onCancel={() => setYearToDelete(null)}
+          onConfirm={confirmDelete}
+          isLoading={isDeleting}
+        />
+      , document.body)}
 
       {(showModal || editYear) && (
         <SchoolYearModal

@@ -184,7 +184,7 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ml-0 relative z-10 print:ml-0 print:p-0 ${
+        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ml-0 print:ml-0 print:p-0 ${
           isCollapsed ? "lg:ml-[100px]" : "lg:ml-[280px]"
         }`}
       >
