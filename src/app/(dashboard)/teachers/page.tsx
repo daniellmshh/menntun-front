@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   ClipboardList,
   Plus,
@@ -25,7 +26,9 @@ import {
   ToggleRight,
   Save,
   Info,
+  FileSpreadsheet,
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import Loader from "@/components/shared/Loader";
 import { useAuthStore } from "@/store/auth.store";
@@ -100,8 +103,11 @@ export default function TeachersPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   // Create/Edit Form Modal states
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formModalMode, setFormModalMode] = useState<"create" | "edit">("create");
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -369,7 +375,7 @@ export default function TeachersPage() {
     }
   };
 
-  // Search filter logic
+  // Search & status filter logic
   const filteredTeachers = teachers.filter((t) => {
     const query = searchQuery.toLowerCase().trim();
     const fullName = `${t.firstName} ${t.lastName}`.toLowerCase();
@@ -379,8 +385,54 @@ export default function TeachersPage() {
       (t.teacherProfile?.employeeNumber && t.teacherProfile.employeeNumber.toLowerCase().includes(query)) ||
       (t.teacherProfile?.specialty && t.teacherProfile.specialty.toLowerCase().includes(query));
 
-    return matchesSearch;
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "active") return t.active === true;
+    if (statusFilter === "inactive") return t.active === false;
+
+    return true;
   });
+
+  // Export report to Excel
+  const handleExportExcel = () => {
+    const exportData = filteredTeachers.map((t, index) => ({
+      "#": index + 1,
+      "Nº Empleado": t.teacherProfile?.employeeNumber || "N/A",
+      "Nombre": t.firstName,
+      "Apellidos": t.lastName,
+      "Correo Electrónico": t.email,
+      "Teléfono": t.phone || "N/A",
+      "Escuela / Plantel": t.school?.name || "N/A",
+      "Especialidad": t.teacherProfile?.specialty || "N/A",
+      "Módulos Permitidos": (t.teacherProfile?.allowedModules && t.teacherProfile.allowedModules.length > 0)
+        ? t.teacherProfile.allowedModules.join(", ")
+        : "Todos",
+      "Estado": t.active ? "Activo" : "Desactivado",
+      "Fecha de Registro": t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "N/A",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    worksheet["!cols"] = [
+      { wch: 5 },   // #
+      { wch: 15 },  // Nº Empleado
+      { wch: 18 },  // Nombre
+      { wch: 22 },  // Apellidos
+      { wch: 32 },  // Correo
+      { wch: 16 },  // Teléfono
+      { wch: 28 },  // Escuela
+      { wch: 22 },  // Especialidad
+      { wch: 28 },  // Módulos
+      { wch: 14 },  // Estado
+      { wch: 16 },  // Fecha
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Maestros");
+
+    const filename = `Reporte_Maestros_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
 
   if (authLoading) {
     return (
@@ -414,13 +466,18 @@ export default function TeachersPage() {
       <div className="space-y-8 animate-fade-in">
         {/* Header section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1 text-center md:text-left">
-          <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
-            {t.teachers.title}
-          </h1>
-          <p className="text-[var(--text-secondary)] text-sm max-w-2xl">
-            {t.teachers.subtitle}
-          </p>
+        <div className="flex items-center gap-4 text-center md:text-left">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <UserCheck size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+              {t.teachers.title}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-0.5 max-w-2xl">
+              {t.teachers.subtitle}
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <button
@@ -466,9 +523,31 @@ export default function TeachersPage() {
               ))}
             </select>
           )}
+
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="glass-input h-[42px] bg-[var(--bg-surface)] text-sm w-full sm:w-[170px]"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Desactivados</option>
+          </select>
         </div>
 
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+          {/* Export Excel Button */}
+          <button
+            onClick={handleExportExcel}
+            disabled={filteredTeachers.length === 0}
+            className="glass-button-secondary h-[42px] px-4 text-xs font-semibold flex items-center gap-2 shrink-0 border border-[var(--border-glass)] hover:border-[var(--accent-primary)]/40 transition-all disabled:opacity-40"
+            title="Exportar listado a Excel"
+          >
+            <FileSpreadsheet size={16} className="text-[var(--accent-success)]" />
+            <span>Exportar Excel</span>
+          </button>
+
           <button
             onClick={fetchTeachers}
             className="w-[42px] h-[42px] rounded-lg border border-[var(--border-glass)] bg-white/[0.03] flex items-center justify-center cursor-pointer transition-all hover:bg-white/[0.08]"
@@ -629,8 +708,8 @@ export default function TeachersPage() {
       )}
 
       {/* Modal - Create/Edit Teacher */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isFormModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsFormModalOpen(false)}
@@ -817,12 +896,13 @@ export default function TeachersPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal - Teacher Detailed View (Tabs: General, Permissions, Assignments) */}
-      {isDetailModalOpen && detailTeacher && (
-        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      {mounted && isDetailModalOpen && detailTeacher && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-3xl w-full p-6 border border-[var(--border-glass)] relative flex flex-col max-h-[85vh] overflow-hidden animate-scale-up">
             <button
               onClick={() => setIsDetailModalOpen(false)}
@@ -1108,7 +1188,8 @@ export default function TeachersPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </ModuleGuard>

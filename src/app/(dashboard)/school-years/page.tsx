@@ -19,12 +19,15 @@ import {
   AlertCircle,
   Clock,
   Layers,
+  Loader2,
 } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import { createPortal } from "react-dom";
 import { translations } from "@/lib/translations";
 import { ApiResponse, UserRole } from "@/types";
 
@@ -93,7 +96,7 @@ function AlertBanner({
 
   return (
     <div
-      className={`fixed top-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-main text-sm font-medium transition-all duration-300
+      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-main text-sm font-medium transition-all duration-300
       ${
         type === "success"
           ? "bg-[hsla(142,72%,45%,0.12)] border-[hsla(142,72%,45%,0.25)] text-[hsl(142,72%,60%)]"
@@ -118,16 +121,18 @@ function AlertBanner({
 function PeriodRow({
   period,
   canManage,
+  isDeleting,
   onDelete,
   t,
 }: {
   period: Period;
   canManage: boolean;
+  isDeleting?: boolean;
   onDelete: (id: string) => void;
   t: any;
 }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[hsla(240,16%,8%,0.6)] border border-[var(--border-glass)] group">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-[var(--bg-panel)] border border-[var(--border-glass)] group">
       <div className="w-6 h-6 rounded-md bg-[hsla(263,90%,60%,0.15)] border border-[hsla(263,90%,60%,0.2)] flex items-center justify-center">
         <span className="text-[10px] font-bold text-[var(--accent-primary)]">{period.order}</span>
       </div>
@@ -138,10 +143,15 @@ function PeriodRow({
       {canManage && (
         <button
           onClick={() => onDelete(period.id)}
-          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-[var(--accent-danger)] transition-all"
+          disabled={isDeleting}
+          className={`p-1 rounded transition-all ${
+            isDeleting 
+              ? "opacity-100 text-[var(--text-secondary)]" 
+              : "opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-[var(--accent-danger)]"
+          }`}
           title={t.modal.removePeriod}
         >
-          <Trash2 size={13} />
+          {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
         </button>
       )}
     </div>
@@ -163,11 +173,14 @@ function SchoolYearDetail({
   onUpdated: (updated: SchoolYear) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [showAddPeriod, setShowAddPeriod] = useState(false);
   const [periodForm, setPeriodForm] = useState({ name: "", startDate: "", endDate: "", order: 1 });
   const [loading, setLoading] = useState(false);
-  const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [alert, setAlert] = useState<{ msg: string; type: "error" | "success" } | null>(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [deletingPeriodId, setDeletingPeriodId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const showAlert = (msg: string, type: "success" | "error") => {
@@ -194,7 +207,7 @@ function SchoolYearDetail({
   };
 
   const handleDeletePeriod = async (periodId: string) => {
-    setLoading(true);
+    setDeletingPeriodId(periodId);
     try {
       await api.delete(`/academic/school-years/${year.id}/periods/${periodId}`);
       const res = await api.get<ApiResponse<SchoolYear>>(`/academic/school-years/${year.id}`);
@@ -203,7 +216,7 @@ function SchoolYearDetail({
     } catch {
       showAlert(t.alerts.errorDeletePeriod, "error");
     } finally {
-      setLoading(false);
+      setDeletingPeriodId(null);
     }
   };
 
@@ -223,7 +236,9 @@ function SchoolYearDetail({
 
   const sortedPeriods = [...(year.periods || [])].sort((a, b) => a.order - b.order);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
       <div
         className="w-full max-w-2xl glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col"
@@ -305,16 +320,16 @@ function SchoolYearDetail({
                       value={periodForm.name}
                       onChange={(e) => setPeriodForm({ ...periodForm, name: e.target.value })}
                       placeholder="Ej. Trimestre 1"
-                      className="w-full input-glass text-sm"
+                      className="w-full glass-input text-sm"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodStart}</label>
-                    <input type="date" value={periodForm.startDate} onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })} className="w-full input-glass text-sm" />
+                    <input type="date" value={periodForm.startDate} onChange={(e) => setPeriodForm({ ...periodForm, startDate: e.target.value })} className="w-full glass-input text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodEnd}</label>
-                    <input type="date" value={periodForm.endDate} onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })} className="w-full input-glass text-sm" />
+                    <input type="date" value={periodForm.endDate} onChange={(e) => setPeriodForm({ ...periodForm, endDate: e.target.value })} className="w-full glass-input text-sm" />
                   </div>
                   <div>
                     <label className="block text-xs text-[var(--text-secondary)] mb-1">{t.modal.periodOrder}</label>
@@ -323,13 +338,13 @@ function SchoolYearDetail({
                       min={1}
                       value={periodForm.order}
                       onChange={(e) => setPeriodForm({ ...periodForm, order: parseInt(e.target.value) || 1 })}
-                      className="w-full input-glass text-sm"
+                      className="w-full glass-input text-sm"
                     />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setShowAddPeriod(false)} className="btn-secondary text-xs px-3 py-2">{t.modal.cancel}</button>
-                  <button onClick={handleAddPeriod} disabled={loading} className="btn-primary text-xs px-3 py-2 disabled:opacity-50">
+                  <button onClick={() => setShowAddPeriod(false)} className="glass-button-secondary">{t.modal.cancel}</button>
+                  <button onClick={handleAddPeriod} disabled={loading} className="glass-button text-xs px-3 py-2 disabled:opacity-50">
                     {loading ? t.modal.loading : t.modal.addPeriod}
                   </button>
                 </div>
@@ -341,7 +356,14 @@ function SchoolYearDetail({
                 <p className="text-sm text-[var(--text-muted)] italic">{t.detail.noPeriods}</p>
               ) : (
                 sortedPeriods.map((p) => (
-                  <PeriodRow key={p.id} period={p} canManage={canManage && year.active} onDelete={handleDeletePeriod} t={t} />
+                  <PeriodRow 
+                    key={p.id} 
+                    period={p} 
+                    canManage={canManage && year.active} 
+                    isDeleting={deletingPeriodId === p.id}
+                    onDelete={handleDeletePeriod} 
+                    t={t} 
+                  />
                 ))
               )}
             </div>
@@ -360,7 +382,7 @@ function SchoolYearDetail({
                     </div>
                     {confirmClose ? (
                       <div className="flex gap-2">
-                        <button onClick={() => setConfirmClose(false)} className="btn-secondary text-xs px-3 py-1.5">{t.modal.cancel}</button>
+                        <button onClick={() => setConfirmClose(false)} className="glass-button-secondary">{t.modal.cancel}</button>
                         <button onClick={handleClose} disabled={loading} className="text-xs px-3 py-1.5 rounded-lg bg-[hsla(38,92%,52%,0.2)] border border-[hsla(38,92%,52%,0.3)] text-[hsl(38,92%,60%)] font-semibold disabled:opacity-50">
                           {loading ? "..." : t.detail.closeYear}
                         </button>
@@ -378,7 +400,8 @@ function SchoolYearDetail({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -399,6 +422,8 @@ function SchoolYearModal({
   onSaved: (y: SchoolYear) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [form, setForm] = useState({
     name: year?.name || "",
     startDate: year ? year.startDate.split("T")[0] : "",
@@ -467,7 +492,9 @@ function SchoolYearModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}>
       <div className="w-full max-w-xl glass-panel border border-[var(--border-glass)] rounded-2xl shadow-main flex flex-col" style={{ maxHeight: "90vh" }}>
         {/* Header */}
@@ -494,7 +521,7 @@ function SchoolYearModal({
               <select
                 value={form.schoolId}
                 onChange={(e) => setForm({ ...form, schoolId: e.target.value })}
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
               >
                 <option value="">— Sin asignar (usar mi escuela) —</option>
                 {schools.map((s: any) => (
@@ -511,17 +538,17 @@ function SchoolYearModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej. Ciclo 2024-2025"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">{t.modal.startDateLabel}</label>
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full input-glass" />
+              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full glass-input" />
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1.5">{t.modal.endDateLabel}</label>
-              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full input-glass" />
+              <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full glass-input" />
             </div>
           </div>
 
@@ -536,17 +563,17 @@ function SchoolYearModal({
               </div>
               <div className="space-y-3">
                 {periods.map((p, idx) => (
-                  <div key={idx} className="p-3 rounded-xl border border-[var(--border-glass)] bg-[hsla(240,16%,8%,0.5)] space-y-2">
+                  <div key={idx} className="p-3 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-panel)] space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[var(--accent-primary)]">Periodo {idx + 1}</span>
                       <button onClick={() => removePeriod(idx)} className="text-xs text-[var(--accent-danger)] hover:opacity-80">{t.modal.removePeriod}</button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="col-span-2">
-                        <input type="text" value={p.name} onChange={(e) => updatePeriod(idx, "name", e.target.value)} placeholder={t.modal.periodName} className="w-full input-glass text-xs" />
+                        <input type="text" value={p.name} onChange={(e) => updatePeriod(idx, "name", e.target.value)} placeholder={t.modal.periodName} className="w-full glass-input text-xs" />
                       </div>
-                      <input type="date" value={p.startDate} onChange={(e) => updatePeriod(idx, "startDate", e.target.value)} className="input-glass text-xs" />
-                      <input type="date" value={p.endDate} onChange={(e) => updatePeriod(idx, "endDate", e.target.value)} className="input-glass text-xs" />
+                      <input type="date" value={p.startDate} onChange={(e) => updatePeriod(idx, "startDate", e.target.value)} className="glass-input text-xs" />
+                      <input type="date" value={p.endDate} onChange={(e) => updatePeriod(idx, "endDate", e.target.value)} className="glass-input text-xs" />
                     </div>
                   </div>
                 ))}
@@ -557,13 +584,14 @@ function SchoolYearModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="btn-secondary">{t.modal.cancel}</button>
-          <button onClick={handleSave} disabled={loading} className="btn-primary disabled:opacity-50">
+          <button onClick={onClose} className="glass-button-secondary">{t.modal.cancel}</button>
+          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -587,6 +615,8 @@ export default function SchoolYearsPage() {
   const [editYear, setEditYear] = useState<SchoolYear | null>(null);
   const [detailYear, setDetailYear] = useState<SchoolYear | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [yearToDelete, setYearToDelete] = useState<SchoolYear | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
 
   const showAlert = useCallback((msg: string, type: "success" | "error") => {
@@ -620,14 +650,18 @@ export default function SchoolYearsPage() {
     fetchSchools();
   }, [fetchYears, fetchSchools]);
 
-  const handleDelete = async (year: SchoolYear) => {
-    if (!confirm(t.detail.deleteYearConfirm)) return;
+  const confirmDelete = async () => {
+    if (!yearToDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/academic/school-years/${year.id}`);
-      setYears((prev) => prev.filter((y) => y.id !== year.id));
+      await api.delete(`/academic/school-years/${yearToDelete.id}`);
+      setYears((prev) => prev.filter((y) => y.id !== yearToDelete.id));
       showAlert(t.alerts.successDelete, "success");
+      setYearToDelete(null);
     } catch (e: any) {
       showAlert(e?.response?.data?.error || t.alerts.errorDelete, "error");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -669,6 +703,17 @@ export default function SchoolYearsPage() {
         )}
 
       {/* Modals */}
+      {/* Delete Confirmation Modal */}
+      {yearToDelete && createPortal(
+        <ConfirmDeleteModal
+          title={t.detail.deleteYearConfirm || "¿Eliminar Ciclo Escolar?"}
+          description="Esta acción no se puede deshacer. Se eliminarán también todos los periodos asociados."
+          onCancel={() => setYearToDelete(null)}
+          onConfirm={confirmDelete}
+          isLoading={isDeleting}
+        />
+      , document.body)}
+
       {(showModal || editYear) && (
         <SchoolYearModal
           year={editYear}
@@ -692,11 +737,11 @@ export default function SchoolYearsPage() {
       {/* Page Header */}
       <div className="mb-8">
         <div className="flex items-center gap-4 mb-2">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
             <CalendarDays size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">{t.title}</h1>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">{t.title}</h1>
             <p className="text-sm text-[var(--text-secondary)] mt-0.5">{t.subtitle}</p>
           </div>
         </div>
@@ -712,7 +757,7 @@ export default function SchoolYearsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={`${t.title}...`}
-            className="w-full input-glass pl-9 text-sm"
+            className="w-full !pl-9 glass-input text-sm"
           />
         </div>
 
@@ -721,7 +766,7 @@ export default function SchoolYearsPage() {
           <select
             value={filterSchoolId}
             onChange={(e) => setFilterSchoolId(e.target.value)}
-            className="input-glass text-sm min-w-[180px]"
+            className="glass-input text-sm min-w-[180px]"
           >
             <option value="">{t.allSchools}</option>
             {schools.map((s: any) => (
@@ -735,7 +780,7 @@ export default function SchoolYearsPage() {
           <button
             id="create-school-year-btn"
             onClick={() => { setEditYear(null); setShowModal(true); }}
-            className="btn-primary flex items-center gap-2 whitespace-nowrap"
+            className="glass-button flex items-center gap-2 whitespace-nowrap"
           >
             <Plus size={16} />
             {t.createBtn}
@@ -752,7 +797,7 @@ export default function SchoolYearsPage() {
             <CalendarDays size={40} className="opacity-30" />
             <p className="text-sm">{t.noData}</p>
             {canManage && (
-              <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2 text-sm mt-2">
+              <button onClick={() => setShowModal(true)} className="glass-button flex items-center gap-2 text-sm mt-2">
                 <Plus size={15} /> {t.createBtn}
               </button>
             )}
@@ -834,10 +879,10 @@ export default function SchoolYearsPage() {
                                 >
                                   <Edit2 size={15} />
                                 </button>
-                                {!year.active && (year._count?.groups ?? 0) === 0 && (
+                                {(year._count?.groups ?? 0) === 0 && (
                                   <button
                                     id={`delete-year-${year.id}`}
-                                    onClick={() => handleDelete(year)}
+                                    onClick={() => setYearToDelete(year)}
                                     title="Eliminar"
                                     className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--accent-danger)] hover:bg-[hsla(354,85%,56%,0.1)] transition-all"
                                   >
@@ -853,7 +898,7 @@ export default function SchoolYearsPage() {
                       {/* Expanded periods row */}
                       {isExpanded && sortedPeriods.length > 0 && (
                         <tr>
-                          <td colSpan={isSuperAdmin ? 8 : 7} className="px-8 py-3 bg-[hsla(240,16%,6%,0.5)] border-b border-[var(--border-glass)]">
+                          <td colSpan={isSuperAdmin ? 8 : 7} className="px-8 py-3 bg-[var(--bg-panel)] border-b border-[var(--border-glass)]">
                             <div className="flex flex-wrap gap-2">
                               {sortedPeriods.map((p) => (
                                 <div key={p.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[hsla(263,90%,60%,0.08)] border border-[hsla(263,90%,60%,0.15)]">

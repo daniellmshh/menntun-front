@@ -67,13 +67,18 @@ export default function OrganizationsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold font-outfit text-[var(--text-primary)]">
-            Organizaciones
-          </h1>
-          <p className="text-[var(--text-secondary)] mt-1">
-            Gestiona redes de colegios y escuelas multi-plantel.
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <Building2 size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+              Organizaciones
+            </h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+              Gestiona redes de colegios y escuelas multi-plantel.
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -146,7 +151,7 @@ export default function OrganizationsPage() {
               <div className="flex justify-end gap-3 mt-6">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-glass)] hover:bg-black/10 transition-colors text-[var(--text-primary)]"
+                  className="glass-button-secondary"
                 >
                   Cancelar
                 </button>

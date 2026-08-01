@@ -18,9 +18,14 @@ export const translations = {
       logout: "Log out",
       schoolYears: "School Years",
       gradesCatalog: "Grades Catalog",
+      subjects: "Subjects",
       groups: "Groups",
       catalogs: "Catalogs",
-      organizations: "Organizations"
+      organizations: "Organizations",
+      finances: "Finances",
+      catalogo: "Catalog",
+      cargos: "Charges",
+      documents: "Documents"
     },
     header: {
       searchPlaceholder: "Search metrics, users...",
@@ -497,9 +502,14 @@ export const translations = {
       logout: "Cerrar sesión",
       schoolYears: "Ciclos Escolares",
       gradesCatalog: "Catálogo de Grados",
+      subjects: "Materias",
       groups: "Grupos",
       catalogs: "Catálogos",
-      organizations: "Organizaciones"
+      organizations: "Organizaciones",
+      finances: "Finanzas",
+      catalogo: "Catálogo",
+      cargos: "Cargos",
+      documents: "Documentos"
     },
     header: {
       searchPlaceholder: "Buscar métricas, usuarios...",

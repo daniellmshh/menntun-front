@@ -8,7 +8,7 @@ import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
-import { ApiResponse, RequestUser, UserRole } from "@/types";
+import { ApiResponse, RequestUser } from "@/types";
 import { useThemeStore } from "@/store/theme.store";
 import { useEffect } from "react";
 
@@ -60,22 +60,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Extract user details from metadata with fallbacks
-      const userMetadata = data.user.user_metadata || {};
-      const schoolId = userMetadata.schoolId || "DEMO-001";
-      const role = (userMetadata.role as UserRole) || UserRole.SUPER_ADMIN;
-      const firstName = userMetadata.firstName || "John";
-      const lastName = userMetadata.lastName || "Doe";
-
-      // 2. Synchronize user with our database
-      // The Axios interceptor will automatically fetch the session we just created
-      // and attach the Bearer Authorization header to this request.
-      const syncResponse = await api.post<ApiResponse<RequestUser>>("/auth/sync", {
-        schoolId,
-        role,
-        firstName,
-        lastName,
-      });
+      // 2. Synchronize the pre-provisioned user with our database. The server
+      // derives identity from the bearer token and never accepts role/school here.
+      const syncResponse = await api.post<ApiResponse<RequestUser>>("/auth/sync");
 
       const syncedUser = syncResponse.data.data;
 

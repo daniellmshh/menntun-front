@@ -105,6 +105,14 @@ const NAV_ITEMS: SidebarItem[] = [
         moduleKey: "academic",
         hideIfIndependent: true,
       },
+      {
+        name: "Subjects",
+        href: "/subjects",
+        icon: BookOpen,
+        requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.TEACHER],
+        moduleKey: "academic",
+        hideIfIndependent: true,
+      },
     ],
   },
   {
@@ -148,6 +156,14 @@ const NAV_ITEMS: SidebarItem[] = [
     hideIfIndependent: true,
   },
   {
+    name: "Documentos",
+    href: "/documents",
+    icon: FileText,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "documents",
+    hideIfIndependent: true,
+  },
+  {
     name: "Attendance",
     href: "/attendance",
     icon: Calendar,
@@ -175,6 +191,31 @@ const NAV_ITEMS: SidebarItem[] = [
     requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
     moduleKey: "scholarships",
     hideIfIndependent: true,
+  },
+  {
+    name: "Finances",
+    icon: ClipboardList,
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+    moduleKey: "finances",
+    hideIfIndependent: true,
+    subItems: [
+      {
+        name: "Catalogo",
+        href: "/finances/catalogo",
+        icon: FolderOpen,
+        requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+        moduleKey: "finances",
+        hideIfIndependent: true,
+      },
+      {
+        name: "Cargos",
+        href: "/finances/cargos",
+        icon: ClipboardList,
+        requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN],
+        moduleKey: "finances",
+        hideIfIndependent: true,
+      },
+    ],
   },
   {
     name: "Communications",
