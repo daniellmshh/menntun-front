@@ -1,23 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  FileText,
-  Plus,
-  Search,
-  CheckCircle,
-  XCircle,
-  Eye,
-  User,
-  X,
-  Upload,
-} from "lucide-react";
+import { Plus, Search, UserPlus, Filter, ShieldCheck, Users } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
+import CreateSolicitudWizard from "./components/CreateSolicitudWizard";
+import SolicitudDetailModal from "./components/SolicitudDetailModal";
 
 export default function EnrollmentsPage() {
   const { user } = useAuthStore();
@@ -25,34 +17,22 @@ export default function EnrollmentsPage() {
   const t = translations[language as keyof typeof translations];
 
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
-  const [schoolYears, setSchoolYears] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterEstado, setFilterEstado] = useState("TODOS");
+  const [filterTipo, setFilterTipo] = useState("TODOS");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null);
-
-  const [createForm, setCreateForm] = useState({
-    schoolYearId: "",
-    firstName: "",
-    lastName: "",
-    nivelEducativo: "",
-    gradoPropuesto: "",
-    parentFirstName: "",
-    parentLastName: "",
-    parentEmail: "",
-    parentRelationship: "Padre",
-  });
 
   const fetchSolicitudes = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get("/enrollments");
       setSolicitudes(res.data.data || []);
-
-      const resYears = await api.get("/academic/school-years");
-      setSchoolYears(resYears.data.data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -64,71 +44,12 @@ export default function EnrollmentsPage() {
     fetchSolicitudes();
   }, [fetchSolicitudes]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await api.post("/enrollments", {
-        schoolYearId: createForm.schoolYearId || undefined,
-        firstName: createForm.firstName,
-        lastName: createForm.lastName,
-        nivelEducativo: createForm.nivelEducativo || undefined,
-        gradoPropuesto: createForm.gradoPropuesto || undefined,
-        padres: [
-          {
-            firstName: createForm.parentFirstName,
-            lastName: createForm.parentLastName,
-            email: createForm.parentEmail,
-            relationship: createForm.parentRelationship,
-            isPrimary: true,
-          },
-        ],
-      });
-      setIsCreateModalOpen(false);
-      fetchSolicitudes();
-    } catch (e: any) {
-      alert(e?.response?.data?.message || "Error al crear");
-    }
-  };
-
-  const handleApprove = async () => {
-    try {
-      await api.post(`/enrollments/${selectedSolicitud.id}/approve`, {
-        cargos: [
-          {
-            concepto: "Inscripción Anual",
-            monto: 5000,
-            fechaVencimiento: new Date().toISOString(),
-          },
-        ],
-      });
-      setIsDetailModalOpen(false);
-      fetchSolicitudes();
-    } catch (e: any) {
-      alert(e?.response?.data?.message || "Error al aprobar");
-    }
-  };
-
-  const handleCancel = async () => {
-    if (
-      !confirm(
-        "¿Seguro que deseas cancelar esta inscripción? Esto revertirá la matrícula.",
-      )
-    )
-      return;
-    try {
-      await api.delete(`/enrollments/${selectedSolicitud.id}/cancel`, {
-        data: { reason: "Cancelado por admin" },
-      });
-      setIsDetailModalOpen(false);
-      fetchSolicitudes();
-    } catch (e: any) {
-      alert(e?.response?.data?.message || "Error al cancelar");
-    }
-  };
-
   const filteredData = solicitudes.filter((s) => {
-    const full = `${s.firstName} ${s.lastName}`.toLowerCase();
-    return full.includes(searchTerm.toLowerCase());
+    const full = `${s.primerNombre} ${s.primerApellido}`.toLowerCase();
+    const matchesSearch = full.includes(searchTerm.toLowerCase());
+    const matchesEstado = filterEstado === "TODOS" || s.estado === filterEstado;
+    const matchesTipo = filterTipo === "TODOS" || s.tipoSolicitud === filterTipo;
+    return matchesSearch && matchesEstado && matchesTipo;
   });
 
   return (
@@ -136,19 +57,26 @@ export default function EnrollmentsPage() {
       <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
         <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-6">
+            
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-[var(--text-primary)]">
-                  {t.sidebar.enrollments}
-                </h1>
-                <p className="text-[var(--text-secondary)] mt-1">
-                  Gestión de solicitudes de inscripción y reinscripción.
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+                  <UserPlus size={24} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                    {t.sidebar.enrollments}
+                  </h1>
+                  <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+                    Gestión de solicitudes de inscripción y reinscripción.
+                  </p>
+                </div>
               </div>
               {user?.role === "SCHOOL_ADMIN" && (
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="btn-primary"
+                  className="glass-button shadow-glow"
                 >
                   <Plus size={20} />
                   Nueva Solicitud
@@ -156,20 +84,81 @@ export default function EnrollmentsPage() {
               )}
             </div>
 
+            {/* Dashboard Panels */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass-panel p-6 rounded-2xl border border-[var(--border-glass)] flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-[hsla(263,90%,60%,0.15)] rounded-lg text-[var(--accent-primary)]">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <h3 className="font-semibold text-lg text-[var(--text-secondary)]">Total Solicitudes</h3>
+                </div>
+                <p className="text-3xl font-extrabold">{solicitudes.length}</p>
+              </div>
+              
+              <div className="glass-panel p-6 rounded-2xl border border-[var(--border-glass)] flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-[hsla(142,72%,45%,0.15)] rounded-lg text-[hsl(142,72%,60%)]">
+                    <Users size={20} />
+                  </div>
+                  <h3 className="font-semibold text-lg text-[var(--text-secondary)]">Aprobadas</h3>
+                </div>
+                <p className="text-3xl font-extrabold">{solicitudes.filter(s => s.estado === 'APROBADA' || s.estado === 'MATRICULADO').length}</p>
+              </div>
+
+              <div className="glass-panel p-6 rounded-2xl border border-[var(--accent-primary)] border-opacity-30 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-transparent opacity-5 group-hover:opacity-10 transition-opacity"></div>
+                <div className="flex items-center justify-between relative z-10">
+                  <div>
+                    <h3 className="font-semibold text-lg text-[var(--text-secondary)] mb-1">Cupo Disponible</h3>
+                    <p className="text-3xl font-extrabold gradient-text">45 / 150</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">Nuevos ingresos proyectados</p>
+                  </div>
+                  <div className="w-16 h-16 rounded-full border-4 border-[var(--accent-primary)] border-opacity-20 flex items-center justify-center">
+                    <span className="font-bold text-[var(--accent-primary)]">30%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* List Section */}
             <div className="glass-panel rounded-2xl border border-[var(--border-glass)] shadow-main">
-              <div className="p-5 border-b border-[var(--border-glass)] flex items-center justify-between">
+              <div className="p-5 border-b border-[var(--border-glass)] flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/5">
                 <div className="relative max-w-sm w-full">
-                  <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
-                  />
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                   <input
                     type="text"
                     placeholder="Buscar aspirante..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="input-glass w-full pl-10"
+                    className="w-full !pl-10 glass-input"
                   />
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+                    <Filter size={16} />
+                    <span>Filtros:</span>
+                  </div>
+                  <select
+                    className="glass-input text-sm py-1.5"
+                    value={filterEstado}
+                    onChange={(e) => setFilterEstado(e.target.value)}
+                  >
+                    <option value="TODOS" className="bg-[var(--bg-base)]">Estado: Todos</option>
+                    <option value="PENDIENTE" className="bg-[var(--bg-base)]">Pendientes</option>
+                    <option value="APROBADA" className="bg-[var(--bg-base)]">Aprobadas</option>
+                    <option value="RECHAZADA" className="bg-[var(--bg-base)]">Rechazadas</option>
+                  </select>
+                  <select
+                    className="glass-input text-sm py-1.5"
+                    value={filterTipo}
+                    onChange={(e) => setFilterTipo(e.target.value)}
+                  >
+                    <option value="TODOS" className="bg-[var(--bg-base)]">Tipo: Todos</option>
+                    <option value="NUEVO_INGRESO" className="bg-[var(--bg-base)]">Nuevo Ingreso</option>
+                    <option value="REINSCRIPCION" className="bg-[var(--bg-base)]">Reinscripción</option>
+                  </select>
                 </div>
               </div>
 
@@ -177,82 +166,67 @@ export default function EnrollmentsPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[var(--border-glass)] bg-white/[0.02]">
-                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                        Aspirante
-                      </th>
-                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                        Ciclo
-                      </th>
-                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">
-                        Estado
-                      </th>
-                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase text-center">
-                        Acciones
-                      </th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Aspirante</th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Tipo</th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Estado</th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Grado / Grupo</th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-glass)]">
                     {loading ? (
                       <tr>
-                        <td colSpan={4} className="p-0 border-0">
+                        <td colSpan={5} className="p-0 border-0">
                           <Loader minHeight="200px" />
                         </td>
                       </tr>
                     ) : filteredData.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={4}
-                          className="p-8 text-center text-[var(--text-muted)]"
-                        >
-                          No hay solicitudes registradas
+                        <td colSpan={5} className="p-8 text-center text-[var(--text-muted)] flex flex-col items-center">
+                          <Search size={32} className="opacity-20 mb-3" />
+                          <p>No hay solicitudes que coincidan con los criterios.</p>
                         </td>
                       </tr>
                     ) : (
                       filteredData.map((s) => (
-                        <tr
-                          key={s.id}
-                          className="hover:bg-white/[0.01] transition-colors"
-                        >
+                        <tr key={s.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => {
+                          setSelectedSolicitud(s);
+                          setIsDetailModalOpen(true);
+                        }}>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-[hsla(263,90%,60%,0.15)] flex items-center justify-center text-[var(--accent-primary)] font-bold">
-                                {s.firstName.charAt(0)}
-                                {s.lastName.charAt(0)}
+                              <div className="w-10 h-10 rounded-full bg-[hsla(263,90%,60%,0.15)] flex items-center justify-center text-[var(--accent-primary)] font-bold shadow-sm">
+                                {s.primerNombre?.charAt(0) || ""}{s.primerApellido?.charAt(0) || ""}
                               </div>
                               <div>
-                                <p className="font-semibold text-[var(--text-primary)]">
-                                  {s.firstName} {s.lastName}
+                                <p className="font-semibold text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors">
+                                  {s.primerNombre} {s.primerApellido}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-[var(--text-secondary)] text-sm">
-                            {s.schoolYear?.name || "-"}
-                          </td>
                           <td className="p-4">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                s.estado === "APROBADA" ||
-                                s.estado === "MATRICULADO"
-                                  ? "bg-[hsla(142,72%,45%,0.15)] text-[hsl(142,72%,60%)]"
-                                  : s.estado === "RECHAZADA" ||
-                                      s.estado === "CANCELADA"
-                                    ? "bg-[hsla(354,85%,56%,0.15)] text-[hsl(354,85%,70%)]"
-                                    : "bg-[hsla(38,92%,52%,0.15)] text-[hsl(38,92%,60%)]"
-                              }`}
-                            >
-                              {s.estado}
+                            <span className="text-sm font-medium text-[var(--text-secondary)]">
+                              {s.tipoSolicitud === "NUEVO_INGRESO" ? "Nuevo Ingreso" : s.tipoSolicitud === "REINSCRIPCION" ? "Reinscripción" : s.tipoSolicitud || "-"}
                             </span>
                           </td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                              s.estado === "APROBADA" || s.estado === "MATRICULADO"
+                                ? "bg-[hsla(142,72%,45%,0.15)] text-[hsl(142,72%,60%)]"
+                                : s.estado === "RECHAZADA" || s.estado === "CANCELADA"
+                                ? "bg-[hsla(354,85%,56%,0.15)] text-[hsl(354,85%,70%)]"
+                                : "bg-[hsla(38,92%,52%,0.15)] text-[hsl(38,92%,60%)]"
+                            }`}>
+                              {s.estado || "PENDIENTE"}
+                            </span>
+                          </td>
+                          <td className="p-4 text-sm text-[var(--text-secondary)]">
+                            {s.gradeId || "-"} <span className="opacity-50 mx-1">/</span> {s.groupId || "-"}
+                          </td>
                           <td className="p-4 text-center">
-                            <button
-                              onClick={() => {
-                                setSelectedSolicitud(s);
-                                setIsDetailModalOpen(true);
-                              }}
-                              className="p-2 rounded-lg hover:bg-white/5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                            >
-                              <Eye size={18} />
+                            <button className="text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors p-2 bg-white/5 hover:bg-white/10 rounded-lg">
+                              Ver Detalle
                             </button>
                           </td>
                         </tr>
@@ -265,218 +239,25 @@ export default function EnrollmentsPage() {
           </div>
         </div>
 
-        {/* CREATE MODAL */}
         {isCreateModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="glass-panel w-full max-w-2xl rounded-2xl shadow-main animate-slide-up flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center p-6 border-b border-[var(--border-glass)]">
-                <h2 className="text-xl font-bold">Nueva Solicitud</h2>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="text-[var(--text-muted)] hover:text-white"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                <form
-                  id="createForm"
-                  onSubmit={handleCreate}
-                  className="space-y-6"
-                >
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--accent-primary)] mb-4">
-                      Datos del Alumno
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-[var(--text-secondary)] mb-1">
-                          Nombre(s)
-                        </label>
-                        <input
-                          required
-                          className="input-glass w-full text-sm"
-                          value={createForm.firstName}
-                          onChange={(e) =>
-                            setCreateForm({
-                              ...createForm,
-                              firstName: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-[var(--text-secondary)] mb-1">
-                          Apellidos
-                        </label>
-                        <input
-                          required
-                          className="input-glass w-full text-sm"
-                          value={createForm.lastName}
-                          onChange={(e) =>
-                            setCreateForm({
-                              ...createForm,
-                              lastName: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--accent-primary)] mb-4">
-                      Datos del Padre/Tutor Principal
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs text-[var(--text-secondary)] mb-1">
-                          Nombre
-                        </label>
-                        <input
-                          required
-                          className="input-glass w-full text-sm"
-                          value={createForm.parentFirstName}
-                          onChange={(e) =>
-                            setCreateForm({
-                              ...createForm,
-                              parentFirstName: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-[var(--text-secondary)] mb-1">
-                          Apellido
-                        </label>
-                        <input
-                          required
-                          className="input-glass w-full text-sm"
-                          value={createForm.parentLastName}
-                          onChange={(e) =>
-                            setCreateForm({
-                              ...createForm,
-                              parentLastName: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-xs text-[var(--text-secondary)] mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          className="input-glass w-full text-sm"
-                          value={createForm.parentEmail}
-                          onChange={(e) =>
-                            setCreateForm({
-                              ...createForm,
-                              parentEmail: e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </form>
-              </div>
-              <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="btn-secondary"
-                >
-                  Cancelar
-                </button>
-                <button form="createForm" type="submit" className="btn-primary">
-                  Generar Solicitud
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateSolicitudWizard
+            onClose={() => setIsCreateModalOpen(false)}
+            onSuccess={() => {
+              setIsCreateModalOpen(false);
+              fetchSolicitudes();
+            }}
+          />
         )}
 
-        {/* DETAIL MODAL */}
         {isDetailModalOpen && selectedSolicitud && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="glass-panel w-full max-w-3xl rounded-2xl shadow-main animate-slide-up flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center p-6 border-b border-[var(--border-glass)]">
-                <h2 className="text-xl font-bold">
-                  Detalle de Solicitud: {selectedSolicitud.firstName}{" "}
-                  {selectedSolicitud.lastName}
-                </h2>
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="text-[var(--text-muted)] hover:text-white"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-semibold text-[var(--text-secondary)]">
-                    Estado Actual:
-                  </span>
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-white/10 text-white">
-                    {selectedSolicitud.estado}
-                  </span>
-                </div>
-
-                <div className="p-4 rounded-xl border border-[var(--border-glass)] bg-white/5">
-                  <h3 className="text-sm font-bold text-[var(--accent-primary)] mb-4">
-                    Padres/Tutores
-                  </h3>
-                  {selectedSolicitud.padres?.map((p: any) => (
-                    <div
-                      key={p.id}
-                      className="text-sm text-[var(--text-primary)]"
-                    >
-                      {p.firstName} {p.lastName} -{" "}
-                      <span className="text-[var(--text-secondary)]">
-                        {p.email}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {selectedSolicitud.estado === "APROBADA" && (
-                  <div className="p-4 rounded-xl border border-[hsla(354,85%,56%,0.3)] bg-[hsla(354,85%,56%,0.05)] space-y-2">
-                    <h3 className="text-sm font-bold text-[hsl(354,85%,60%)]">
-                      Zona de Peligro
-                    </h3>
-                    <p className="text-xs text-[var(--text-secondary)]">
-                      Si el alumno ya no cursará en la institución, puedes
-                      cancelar la inscripción.
-                    </p>
-                    <button
-                      onClick={handleCancel}
-                      className="btn-danger w-full mt-2"
-                    >
-                      Revertir y Cancelar Inscripción
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 border-t border-[var(--border-glass)] flex justify-end gap-3">
-                <button
-                  onClick={() => setIsDetailModalOpen(false)}
-                  className="btn-secondary"
-                >
-                  Cerrar
-                </button>
-                {selectedSolicitud.estado !== "APROBADA" &&
-                  selectedSolicitud.estado !== "CANCELADA" && (
-                    <button
-                      onClick={handleApprove}
-                      className="btn-success text-white px-4 py-2 rounded-xl font-semibold shadow-glow"
-                    >
-                      Aprobar y Matricular
-                    </button>
-                  )}
-              </div>
-            </div>
-          </div>
+          <SolicitudDetailModal
+            solicitud={selectedSolicitud}
+            onClose={() => setIsDetailModalOpen(false)}
+            onSuccess={() => {
+              setIsDetailModalOpen(false);
+              fetchSolicitudes();
+            }}
+          />
         )}
       </div>
     </ModuleGuard>

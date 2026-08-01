@@ -20,6 +20,8 @@ import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import { createPortal } from "react-dom";
 import { translations } from "@/lib/translations";
 import { ApiResponse, UserRole } from "@/types";
 
@@ -59,7 +61,7 @@ function AlertBanner({
 
   return (
     <div
-      className={`fixed top-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-main text-sm font-medium transition-all duration-300
+      className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-3.5 rounded-xl border shadow-main text-sm font-medium transition-all duration-300
       ${
         type === "success"
           ? "bg-[hsla(142,72%,45%,0.12)] border-[hsla(142,72%,45%,0.25)] text-[hsl(142,72%,60%)]"
@@ -92,6 +94,9 @@ function GradeModal({
   onSaved: (g: Grade) => void;
   t: any;
 }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const predefinedLevels = ["PREESCOLAR", "PRIMARIA", "SECUNDARIA"];
   
   const initialSelectValue = !grade?.level 
@@ -147,7 +152,9 @@ function GradeModal({
     }
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}
@@ -179,7 +186,7 @@ function GradeModal({
               <select
                 value={form.schoolId}
                 onChange={(e) => setForm({ ...form, schoolId: e.target.value })}
-                className="w-full input-glass text-sm"
+                className="w-full glass-input text-sm"
               >
                 <option value="">— Sin asignar (usar mi escuela) —</option>
                 {schools.map((s) => (
@@ -200,7 +207,7 @@ function GradeModal({
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Ej. 1° Primaria, 3° Secundaria"
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
 
@@ -211,7 +218,7 @@ function GradeModal({
             <select
               value={selectedLevelType}
               onChange={(e) => setSelectedLevelType(e.target.value)}
-              className="w-full input-glass text-sm text-[var(--text-primary)] bg-black/60"
+              className="w-full glass-input text-sm"
             >
               <option value="">{t.modal.levelPlaceholder}</option>
               <option value="PREESCOLAR">{t.modal.levelSelectOptions.preschool}</option>
@@ -229,22 +236,23 @@ function GradeModal({
               min={1}
               value={form.order}
               onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 1 })}
-              className="w-full input-glass"
+              className="w-full glass-input"
             />
           </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-glass)]">
-          <button onClick={onClose} className="btn-secondary">
+          <button onClick={onClose} className="glass-button-secondary">
             {t.modal.cancel}
           </button>
-          <button onClick={handleSave} disabled={loading} className="btn-primary disabled:opacity-50">
+          <button onClick={handleSave} disabled={loading} className="glass-button disabled:opacity-50">
             {loading ? t.modal.loading : t.modal.save}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -267,6 +275,13 @@ export default function GradesCatalogPage() {
   const [showModal, setShowModal] = useState(false);
   const [editGrade, setEditGrade] = useState<Grade | null>(null);
   const [alert, setAlert] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Grade | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const showAlert = useCallback((msg: string, type: "success" | "error") => {
     setAlert({ msg, type });
@@ -299,18 +314,26 @@ export default function GradesCatalogPage() {
     fetchSchools();
   }, [fetchGrades, fetchSchools]);
 
-  const handleDelete = async (grade: Grade) => {
+  const handleDeleteClick = (grade: Grade) => {
     if (grade._count && grade._count.groups > 0) {
       showAlert(t.alerts.errorDelete, "error");
       return;
     }
-    if (!confirm("¿Estás seguro de que deseas eliminar este grado?")) return;
+    setDeleteTarget(grade);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await api.delete(`/academic/grades/${grade.id}`);
-      setGrades((prev) => prev.filter((g) => g.id !== grade.id));
+      await api.delete(`/academic/grades/${deleteTarget.id}`);
+      setGrades((prev) => prev.filter((g) => g.id !== deleteTarget.id));
       showAlert(t.alerts.successDelete, "success");
+      setDeleteTarget(null);
     } catch (e: any) {
       showAlert(e?.response?.data?.error || t.alerts.errorDelete, "error");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -349,12 +372,17 @@ export default function GradesCatalogPage() {
 
         {/* Header section */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-            {t.title}
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">{t.subtitle}</p>
-        </div>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+              <BookMarked size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+                {t.title}
+              </h1>
+              <p className="text-sm text-[var(--text-secondary)] mt-0.5">{t.subtitle}</p>
+            </div>
+          </div>
 
         {canManage && (
           <button
@@ -362,7 +390,7 @@ export default function GradesCatalogPage() {
               setEditGrade(null);
               setShowModal(true);
             }}
-            className="btn-primary self-start md:self-auto flex items-center gap-2"
+            className="glass-button self-start md:self-auto flex items-center gap-2"
           >
             <Plus size={16} />
             {t.createBtn}
@@ -383,7 +411,7 @@ export default function GradesCatalogPage() {
             placeholder="Buscar por nombre, nivel..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 input-glass"
+            className="w-full !pl-10 glass-input"
           />
         </div>
 
@@ -394,7 +422,7 @@ export default function GradesCatalogPage() {
             <select
               value={filterSchoolId}
               onChange={(e) => setFilterSchoolId(e.target.value)}
-              className="input-glass text-sm max-w-xs"
+              className="glass-input text-sm max-w-xs"
             >
               <option value="">Todos los colegios</option>
               {schools.map((s) => (
@@ -503,8 +531,8 @@ export default function GradesCatalogPage() {
                             <Edit2 size={15} />
                           </button>
                           <button
-                            onClick={() => handleDelete(g)}
-                            className="p-2 rounded-lg hover:bg-red-500/10 text-[var(--text-muted)] hover:text-[var(--accent-danger)] transition-colors"
+                            onClick={() => handleDeleteClick(g)}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[hsla(354,85%,56%,0.1)] hover:text-[hsl(354,85%,60%)] transition-colors"
                             title="Eliminar Grado"
                           >
                             <Trash2 size={15} />
@@ -521,7 +549,22 @@ export default function GradesCatalogPage() {
       </div>
 
       {/* Create / Edit Modal */}
-      {showModal && (
+      {/* Delete Confirmation Modal */}
+      {mounted && deleteTarget && createPortal(
+        <ConfirmDeleteModal
+          title="Eliminar Grado"
+          description={
+            <>
+              ¿Estás seguro de que deseas eliminar el grado <strong className="text-[var(--text-primary)]">"{deleteTarget.name}"</strong>?
+            </>
+          }
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+          isLoading={deleteLoading}
+        />
+      , document.body)}
+
+      {(showModal || editGrade) && (
         <GradeModal
           grade={editGrade}
           schools={schools}

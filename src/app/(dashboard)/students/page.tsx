@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Users,
   Plus,
@@ -19,6 +20,7 @@ import {
   Calendar,
   Layers,
   Award,
+  GraduationCap,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
@@ -92,6 +94,8 @@ export default function StudentsPage() {
   const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
 
   // Create/Edit Form Modal states
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [formModalMode, setFormModalMode] = useState<"create" | "edit">("create");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -395,13 +399,18 @@ export default function StudentsPage() {
       <div className="space-y-8 animate-fade-in">
         {/* Header section */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1 text-center md:text-left">
-          <h1 className="gradient-text text-[2.2rem] font-extrabold tracking-tight">
-            {t.students?.title || "Students Directory"}
-          </h1>
-          <p className="text-[var(--text-secondary)] text-sm max-w-2xl">
-            {t.students?.subtitle || "Manage student profiles, enrollments, and details."}
-          </p>
+        <div className="flex items-center gap-4 text-center md:text-left">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <GraduationCap size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+              {t.students?.title || "Students Directory"}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-0.5 max-w-2xl">
+              {t.students?.subtitle || "Manage student profiles, enrollments, and details."}
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <button
@@ -656,8 +665,8 @@ export default function StudentsPage() {
       )}
 
       {/* Modal - Create/Edit Student */}
-      {isFormModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      {mounted && isFormModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="glass-panel max-w-lg w-full p-6 space-y-6 border border-[var(--border-glass)] relative">
             <button
               onClick={() => setIsFormModalOpen(false)}
@@ -900,12 +909,13 @@ export default function StudentsPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal - Student Detailed View */}
-      {isDetailModalOpen && detailStudent && (
-        <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      {mounted && isDetailModalOpen && detailStudent && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="glass-panel max-w-3xl w-full p-6 border border-[var(--border-glass)] relative flex flex-col max-h-[85vh] overflow-hidden animate-scale-up">
             <button
               onClick={() => setIsDetailModalOpen(false)}
@@ -1081,7 +1091,8 @@ export default function StudentsPage() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       </div>
     </ModuleGuard>
