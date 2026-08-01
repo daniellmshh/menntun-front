@@ -2,20 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  ArrowLeft,
-  Sparkles,
   Plus,
   X,
-  ChevronRight,
-  ChevronLeft,
   BookOpen,
   Layers,
   Settings2,
   Users,
   Check,
-  AlertCircle,
   Info,
 } from "lucide-react";
 import api from "@/lib/api/axios";
@@ -28,12 +22,13 @@ import {
   CatalogoCampoFormativo,
 } from "@/modules/planning/types";
 import { PlanningModalidadLabels, PlanningModalidadIcons } from "@/modules/planning/constants";
-import { useLanguageStore } from "@/store/language.store";
-import { useAuthStore } from "@/store/auth.store";
-import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import { sanitizeInput } from "@/lib/utils";
+import PlanningGenerationOverlay from "./PlanningGenerationOverlay";
+import PlanningWizardNavigation from "./PlanningWizardNavigation";
+import PlanningWizardStepIndicator from "./PlanningWizardStepIndicator";
+import PlanningWizardHeader from "./PlanningWizardHeader";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,13 +45,6 @@ const CAMPO_BADGE: Record<string, string> = {
   ETICA_NATURALEZA_SOCIEDADES: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
   HUMANO_COMUNITARIO: "bg-amber-500/20 text-amber-300 border-amber-500/40",
 };
-
-const STEP_LABELS = [
-  "Identificación",
-  "Curricular",
-  "Catálogos",
-  "Revisar",
-];
 
 interface AcademicGroupOption {
   id: string;
@@ -104,9 +92,6 @@ function parsePlanningStreamEvent(raw: string): PlanningStreamEvent | null {
 
 function NewPlanningContent() {
   const router = useRouter();
-  const { language } = useLanguageStore();
-  const { user } = useAuthStore();
-  const t = translations[language];
 
   // UI state
   const [step, setStep] = useState(0); // 0-3
@@ -393,247 +378,19 @@ function NewPlanningContent() {
 
   // ─── Overlay de generación (SSE streaming) ─────────────────────────────────
   if (generating) {
-    // Extrae fragmentos legibles del JSON parcial acumulado
-    const extractPreview = (raw: string) => {
-      const items: { tipo: "titulo" | "momento" | "actividad"; texto: string }[] = [];
-
-      // Título
-      const titleMatch = raw.match(/"title"\s*:\s*"([^"]{3,})"/);
-      if (titleMatch) items.push({ tipo: "titulo", texto: titleMatch[1] });
-
-      // Momentos
-      const momentoMatches = [...raw.matchAll(/"momento"\s*:\s*"([^"]{3,})"/g)];
-      momentoMatches.forEach((m) => items.push({ tipo: "momento", texto: m[1] }));
-
-      // Actividades (primera línea de cada actividad)
-      const actMatches = [...raw.matchAll(/"actividades"\s*:\s*"((?:[^"\\]|\\.)*)"/g)];
-      actMatches.forEach((m) => {
-        const firstLine = m[1]
-          .replace(/\\n/g, "\n")
-          .split("\n")
-          .find((l) => l.trim().length > 10);
-        if (firstLine) items.push({ tipo: "actividad", texto: firstLine.replace(/^-\s*/, "").trim() });
-      });
-
-      return items;
-    };
-
-    const previewItems = extractPreview(streamContent);
-
     return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ background: "var(--bg-base)" }}
-      >
-        {/* Blobs de fondo — siempre sutiles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div
-            className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-[0.07] animate-pulse"
-            style={{ background: "var(--accent-primary)" }}
-          />
-          <div
-            className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-[0.07] animate-pulse"
-            style={{ background: "var(--accent-secondary)", animationDelay: "1s" }}
-          />
-        </div>
-
-        <div className="relative z-10 w-full max-w-2xl mx-4">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div
-              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 animate-pulse"
-              style={{
-                background: "color-mix(in srgb, var(--accent-primary) 15%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent)",
-              }}
-            >
-              <Sparkles size={28} style={{ color: "var(--accent-primary)" }} />
-            </div>
-            <h2 className="text-2xl font-bold gradient-text mb-2">Generando tu planeación</h2>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              La IA está construyendo la Matriz Didáctica completa…
-            </p>
-          </div>
-
-          {/* Barra de progreso */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                {streamStatus}
-              </span>
-              <span className="text-xs font-bold" style={{ color: "var(--accent-primary-light)" }}>
-                {Math.round(streamProgress)}%
-              </span>
-            </div>
-            <div
-              className="w-full h-2 rounded-full"
-              style={{ background: "var(--border-glass)" }}
-            >
-              <div
-                className="h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${streamProgress}%`,
-                  background: "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))",
-                  boxShadow: streamProgress > 10 ? "var(--shadow-glow)" : "none",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Preview humanizada */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border-glass)",
-              minHeight: "220px",
-              maxHeight: "260px",
-              overflowY: "auto",
-            }}
-          >
-            {previewItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full py-12 gap-3">
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-                  style={{ borderColor: "var(--accent-primary)", borderTopColor: "transparent" }}
-                />
-                <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                  Esperando respuesta de la IA…
-                </p>
-              </div>
-            ) : (
-              <div className="p-4 space-y-3">
-                {previewItems.map((item, i) => {
-                  if (item.tipo === "titulo") {
-                    return (
-                      <div key={i} className="flex items-start gap-3">
-                        <span className="text-lg leading-none mt-0.5">📋</span>
-                        <div>
-                          <p
-                            className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
-                            style={{ color: "var(--text-muted)" }}
-                          >
-                            Título del proyecto
-                          </p>
-                          <p
-                            className="text-sm font-semibold leading-snug"
-                            style={{ color: "var(--text-primary)" }}
-                          >
-                            {item.texto}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  }
-                  if (item.tipo === "momento") {
-                    return (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                        style={{
-                          background: "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
-                          border: "1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent)",
-                        }}
-                      >
-                        <span className="text-sm">🔷</span>
-                        <p
-                          className="text-xs font-semibold"
-                          style={{ color: "var(--accent-primary-light)" }}
-                        >
-                          {item.texto}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div key={i} className="flex items-start gap-2 pl-2">
-                      <span
-                        className="text-xs mt-1 shrink-0"
-                        style={{ color: "var(--accent-success)" }}
-                      >
-                        ✓
-                      </span>
-                      <p
-                        className="text-xs leading-relaxed line-clamp-2"
-                        style={{ color: "var(--text-secondary)" }}
-                      >
-                        {item.texto}
-                      </p>
-                    </div>
-                  );
-                })}
-                {/* Cursor parpadeante al final */}
-                <span
-                  className="inline-block w-2 h-3.5 align-middle animate-pulse rounded-sm"
-                  style={{ background: "var(--accent-primary)" }}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Nota inferior */}
-          <p className="text-center text-xs mt-4" style={{ color: "var(--text-muted)" }}>
-            Esto puede tomar entre 20 y 40 segundos &mdash; no cierres esta ventana
-          </p>
-        </div>
-      </div>
+      <PlanningGenerationOverlay
+        content={streamContent}
+        status={streamStatus}
+        progress={streamProgress}
+      />
     );
   }
 
-
   return (
     <div className="animate-fade-in">
-      {/* Back */}
-      <div className="mb-6 flex items-center gap-3">
-        <Link
-          href="/planning"
-          className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm"
-        >
-          <ArrowLeft size={16} />
-          Regresar a Planeaciones
-        </Link>
-      </div>
-
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold gradient-text mb-2">Nueva Planeación</h1>
-        <p className="text-[var(--text-secondary)]">
-          Formato NEM — Matriz Multidimensional e Integradora
-        </p>
-      </div>
-
-      {/* Step indicator */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2">
-          {STEP_LABELS.map((label, idx) => (
-            <React.Fragment key={idx}>
-              <div
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  idx === step
-                    ? "bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] border border-[var(--accent-primary)]/40"
-                    : idx < step
-                    ? "bg-[var(--accent-success)]/20 text-[var(--accent-success)] border border-[var(--accent-success)]/30"
-                    : "text-[var(--text-muted)] border border-[var(--border-glass)]"
-                }`}
-              >
-                {idx < step ? <Check size={14} /> : <span className="w-4 text-center">{idx + 1}</span>}
-                <span className="hidden sm:inline">{label}</span>
-              </div>
-              {idx < STEP_LABELS.length - 1 && (
-                <div className={`flex-1 h-px ${idx < step ? "bg-[var(--accent-success)]/30" : "bg-[var(--border-glass)]"}`} />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      {/* Error banner */}
-      {error && (
-        <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-[var(--accent-danger)]/10 border border-[var(--accent-danger)]/30 text-[var(--accent-danger)]">
-          <AlertCircle size={18} className="shrink-0 mt-0.5" />
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
+      <PlanningWizardHeader error={error} />
+      <PlanningWizardStepIndicator step={step} />
 
       {/* ──── STEP 0: Identificación ──── */}
       {step === 0 && (
@@ -731,7 +488,7 @@ function NewPlanningContent() {
                       if ('showPicker' in HTMLInputElement.prototype) {
                         (e.target as HTMLInputElement).showPicker();
                       }
-                    } catch (err) {}
+                    } catch {}
                   }}
                   className="glass-input w-full [color-scheme:dark] cursor-pointer"
                 />
@@ -749,7 +506,7 @@ function NewPlanningContent() {
                       if ('showPicker' in HTMLInputElement.prototype) {
                         (e.target as HTMLInputElement).showPicker();
                       }
-                    } catch (err) {}
+                    } catch {}
                   }}
                   className="glass-input w-full [color-scheme:dark] cursor-pointer"
                 />
@@ -1207,37 +964,14 @@ function NewPlanningContent() {
         </div>
       )}
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between mt-8">
-        <button
-          onClick={() => setStep((s) => s - 1)}
-          disabled={step === 0}
-          className="glass-button-secondary flex items-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft size={16} />
-          Anterior
-        </button>
-
-        {step < 3 ? (
-          <button
-            onClick={() => setStep((s) => s + 1)}
-            disabled={!canProceed()}
-            className="glass-button flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Siguiente
-            <ChevronRight size={16} />
-          </button>
-        ) : (
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="glass-button flex items-center gap-2 disabled:opacity-60"
-          >
-            <Sparkles size={16} />
-            Generar Planeación
-          </button>
-        )}
-      </div>
+      <PlanningWizardNavigation
+        step={step}
+        canProceed={canProceed()}
+        generating={generating}
+        onPrevious={() => setStep((currentStep) => currentStep - 1)}
+        onNext={() => setStep((currentStep) => currentStep + 1)}
+        onGenerate={handleGenerate}
+      />
     </div>
   );
 }
