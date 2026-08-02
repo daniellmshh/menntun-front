@@ -106,7 +106,7 @@ export default function CreateSolicitudWizard({
               formDataUpload.append("tipoDocumentoId", tipoId);
               formDataUpload.append("file", file);
               await api.post(
-                `/enrollments/${solicitudId}/upload`,
+                `/enrollments/${solicitudId}/documents`,
                 formDataUpload,
                 {
                   headers: { "Content-Type": "multipart/form-data" },

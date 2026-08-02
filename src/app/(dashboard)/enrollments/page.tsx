@@ -23,6 +23,7 @@ export default function EnrollmentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEstado, setFilterEstado] = useState("TODOS");
   const [filterTipo, setFilterTipo] = useState("TODOS");
+  const [filterExpediente, setFilterExpediente] = useState("TODOS");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -44,12 +45,23 @@ export default function EnrollmentsPage() {
     fetchSolicitudes();
   }, [fetchSolicitudes]);
 
+  const getPendingRequiredDocuments = (solicitud: any) =>
+    (solicitud.documentos || []).filter(
+      (documento: any) =>
+        documento.obligatorio && documento.estado !== "VALIDADO",
+    ).length;
+
   const filteredData = solicitudes.filter((s) => {
     const full = `${s.primerNombre} ${s.primerApellido}`.toLowerCase();
     const matchesSearch = full.includes(searchTerm.toLowerCase());
     const matchesEstado = filterEstado === "TODOS" || s.estado === filterEstado;
     const matchesTipo = filterTipo === "TODOS" || s.tipoSolicitud === filterTipo;
-    return matchesSearch && matchesEstado && matchesTipo;
+    const pendingRequiredDocuments = getPendingRequiredDocuments(s);
+    const matchesExpediente =
+      filterExpediente === "TODOS" ||
+      (filterExpediente === "INCOMPLETO" && pendingRequiredDocuments > 0) ||
+      (filterExpediente === "COMPLETO" && pendingRequiredDocuments === 0);
+    return matchesSearch && matchesEstado && matchesTipo && matchesExpediente;
   });
 
   return (
@@ -152,6 +164,15 @@ export default function EnrollmentsPage() {
                   </select>
                   <select
                     className="glass-input text-sm py-1.5"
+                    value={filterExpediente}
+                    onChange={(e) => setFilterExpediente(e.target.value)}
+                  >
+                    <option value="TODOS" className="bg-[var(--bg-base)]">Papelería: Todas</option>
+                    <option value="INCOMPLETO" className="bg-[var(--bg-base)]">Expediente incompleto</option>
+                    <option value="COMPLETO" className="bg-[var(--bg-base)]">Expediente completo</option>
+                  </select>
+                  <select
+                    className="glass-input text-sm py-1.5"
                     value={filterTipo}
                     onChange={(e) => setFilterTipo(e.target.value)}
                   >
@@ -170,19 +191,20 @@ export default function EnrollmentsPage() {
                       <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Tipo</th>
                       <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Estado</th>
                       <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Grado / Grupo</th>
+                      <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase">Papelería</th>
                       <th className="p-4 text-xs font-bold text-[var(--text-secondary)] uppercase text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-glass)]">
                     {loading ? (
                       <tr>
-                        <td colSpan={5} className="p-0 border-0">
+                        <td colSpan={6} className="p-0 border-0">
                           <Loader minHeight="200px" />
                         </td>
                       </tr>
                     ) : filteredData.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-[var(--text-muted)] flex flex-col items-center">
+                        <td colSpan={6} className="p-8 text-center text-[var(--text-muted)] flex flex-col items-center">
                           <Search size={32} className="opacity-20 mb-3" />
                           <p>No hay solicitudes que coincidan con los criterios.</p>
                         </td>
@@ -224,6 +246,21 @@ export default function EnrollmentsPage() {
                           <td className="p-4 text-sm text-[var(--text-secondary)]">
                             {s.gradeId || "-"} <span className="opacity-50 mx-1">/</span> {s.groupId || "-"}
                           </td>
+                          <td className="p-4">
+                            {!(s.documentos || []).some((documento: any) => documento.obligatorio) ? (
+                              <span className="inline-flex rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold text-[var(--text-secondary)]">
+                                Sin requisitos
+                              </span>
+                            ) : getPendingRequiredDocuments(s) > 0 ? (
+                              <span className="inline-flex rounded-full bg-[hsla(38,92%,52%,0.15)] px-2.5 py-1 text-xs font-bold text-[hsl(38,92%,60%)]">
+                                {getPendingRequiredDocuments(s)} pendiente{getPendingRequiredDocuments(s) === 1 ? "" : "s"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-[hsla(142,72%,45%,0.15)] px-2.5 py-1 text-xs font-bold text-[hsl(142,72%,60%)]">
+                                Completo
+                              </span>
+                            )}
+                          </td>
                           <td className="p-4 text-center">
                             <button className="text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors p-2 bg-white/5 hover:bg-white/10 rounded-lg">
                               Ver Detalle
@@ -257,6 +294,7 @@ export default function EnrollmentsPage() {
               setIsDetailModalOpen(false);
               fetchSolicitudes();
             }}
+            onDocumentsChanged={fetchSolicitudes}
           />
         )}
       </div>
