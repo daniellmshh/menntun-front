@@ -4,9 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
-  Bookmark,
   BookOpen,
-  Calendar,
   CheckCircle,
   ChevronRight,
   FileSpreadsheet,
@@ -19,7 +17,6 @@ import {
   User,
   UserMinus,
   UserPlus,
-  Users,
   X,
   XCircle,
 } from "lucide-react";
@@ -31,6 +28,7 @@ import type {
   GroupTranslations,
   Teacher,
 } from "../types";
+import GroupGeneralTab from "./GroupGeneralTab";
 
 // ─── DETAILS DRAWER ──────────────────────────────────────────────────
 
@@ -380,33 +378,11 @@ export default function GroupDetailDrawer({
 
           {/* ── GENERAL TAB ── */}
           {activeTab === "general" && (
-            <div className="space-y-4">
-              <div className="glass-panel p-4 rounded-xl border border-[var(--border-glass)] space-y-3">
-                <div className="flex justify-between items-center text-sm border-b border-[var(--border-glass)] pb-2.5">
-                  <span className="text-[var(--text-secondary)] flex items-center gap-1.5"><Bookmark size={15} />{t.detail.grade}</span>
-                  <span className="font-bold text-[var(--text-primary)]">{group.grade?.name || "—"}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm border-b border-[var(--border-glass)] pb-2.5">
-                  <span className="text-[var(--text-secondary)] flex items-center gap-1.5"><Calendar size={15} />{t.detail.schoolYear}</span>
-                  <span className="font-bold text-[var(--text-primary)]">{group.schoolYear?.name || "—"}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-[var(--text-secondary)] flex items-center gap-1.5"><Users size={15} />{t.detail.capacity}</span>
-                  <span className="font-bold text-[var(--text-primary)]">{group._count?.enrollments ?? 0} / {group.maxStudents || "∞"}</span>
-                </div>
-              </div>
-              {homeroomTeacher && (
-                <div className="flex items-center gap-3 p-4 rounded-xl border border-[hsla(142,72%,45%,0.2)] bg-[hsla(142,72%,45%,0.06)]">
-                  <ShieldCheck size={18} className="text-[hsl(142,72%,55%)] flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-[hsl(142,72%,55%)] font-semibold">Maestro Titular</p>
-                    <p className="text-sm font-bold text-[var(--text-primary)]">
-                      {homeroomTeacher.teacherProfile.user.firstName} {homeroomTeacher.teacherProfile.user.lastName}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <GroupGeneralTab
+              group={group}
+              homeroomTeacher={homeroomTeacher}
+              t={t}
+            />
           )}
 
           {/* ── TEACHERS TAB ── */}
