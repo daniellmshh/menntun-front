@@ -11,12 +11,36 @@ import { Building2, ArrowLeft, Plus, Users, School, Loader2 } from "lucide-react
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+interface OrganizationSchool {
+  id: string;
+  name: string;
+  code: string;
+  organizationId?: string | null;
+}
+
+interface OrganizationAdmin {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface OrganizationDetail {
+  id: string;
+  name: string;
+  schools?: OrganizationSchool[];
+  users?: OrganizationAdmin[];
+}
+
 export default function OrganizationDetailsPage() {
   const { id } = useParams() as { id: string };
   const { user } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"schools" | "admins">("schools");
+  const canViewOrganization =
+    user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ORG_ADMIN;
+  const canManageOrganization = user?.role === UserRole.SUPER_ADMIN;
 
   // Modals state
   const [isAssignSchoolModalOpen, setIsAssignSchoolModalOpen] = useState(false);
@@ -34,20 +58,20 @@ export default function OrganizationDetailsPage() {
   const { data: org, isLoading } = useQuery({
     queryKey: ["organization", id],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<any>>(`/organizations/${id}`);
+      const res = await api.get<ApiResponse<OrganizationDetail>>(`/organizations/${id}`);
       return res.data.data;
     },
-    enabled: !!id,
+    enabled: !!id && canViewOrganization,
   });
 
   const { data: allSchools } = useQuery({
     queryKey: ["schools-unassigned"],
     queryFn: async () => {
-      const res = await api.get<ApiResponse<any[]>>(`/schools`);
+      const res = await api.get<ApiResponse<OrganizationSchool[]>>(`/schools`);
       // Optionally filter only schools without organization if backend returns all
       return res.data.data?.filter(s => s.organizationId === null) || [];
     },
-    enabled: isAssignSchoolModalOpen,
+    enabled: canManageOrganization && isAssignSchoolModalOpen,
   });
 
   const assignSchoolMutation = useMutation({
@@ -79,6 +103,16 @@ export default function OrganizationDetailsPage() {
       setAdminPassword("");
     },
   });
+
+  if (!canViewOrganization) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <p className="text-[var(--text-secondary)]">
+          No tienes permisos para ver esta página.
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) return <Loader />;
 
@@ -140,17 +174,19 @@ export default function OrganizationDetailsPage() {
       <div className="pt-4">
         {activeTab === "schools" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <button onClick={() => setIsAssignSchoolModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--bg-panel)] hover:bg-black/10 border border-[var(--border-glass)] rounded-xl transition-all text-[var(--text-primary)]">
-                <Plus className="w-4 h-4" /> Asignar Plantel
-              </button>
-            </div>
+            {canManageOrganization && (
+              <div className="flex justify-end">
+                <button onClick={() => setIsAssignSchoolModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--bg-panel)] hover:bg-black/10 border border-[var(--border-glass)] rounded-xl transition-all text-[var(--text-primary)]">
+                  <Plus className="w-4 h-4" /> Asignar Plantel
+                </button>
+              </div>
+            )}
             
             {org.schools?.length === 0 ? (
               <div className="p-12 text-center text-[var(--text-secondary)] glass-panel border border-[var(--border-glass)]">No hay planteles asignados.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {org.schools?.map((school: any) => (
+                {org.schools?.map((school) => (
                   <div key={school.id} className="glass-panel p-5 flex items-center justify-between border border-[var(--border-glass)]">
                     <div>
                       <h4 className="font-bold text-lg text-[var(--text-primary)]">{school.name}</h4>
@@ -168,17 +204,19 @@ export default function OrganizationDetailsPage() {
 
         {activeTab === "admins" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
-              <button onClick={() => setIsCreateAdminModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30 rounded-xl transition-all">
-                <Plus className="w-4 h-4" /> Nuevo ORG_ADMIN
-              </button>
-            </div>
+            {canManageOrganization && (
+              <div className="flex justify-end">
+                <button onClick={() => setIsCreateAdminModalOpen(true)} className="glass-button flex items-center gap-2 px-4 py-2 bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/30 rounded-xl transition-all">
+                  <Plus className="w-4 h-4" /> Nuevo ORG_ADMIN
+                </button>
+              </div>
+            )}
             
             {org.users?.length === 0 ? (
               <div className="p-12 text-center text-[var(--text-secondary)] glass-panel border border-[var(--border-glass)]">No hay administradores registrados.</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {org.users?.map((admin: any) => (
+                {org.users?.map((admin) => (
                   <div key={admin.id} className="glass-panel p-5 border border-[var(--border-glass)]">
                     <h4 className="font-bold text-lg text-[var(--text-primary)]">{admin.firstName} {admin.lastName}</h4>
                     <p className="text-sm text-[var(--text-secondary)]">{admin.email}</p>

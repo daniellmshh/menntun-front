@@ -1,0 +1,711 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import {
+  ClipboardList,
+  Plus,
+  Search,
+  Edit2,
+  ShieldAlert,
+  Loader2,
+  Check,
+  X,
+  Phone,
+  Mail,
+  RefreshCw,
+  Eye,
+  UserCheck,
+  UserX,
+  User,
+  Building2,
+  Lock,
+  Calendar,
+  CheckSquare,
+  ToggleLeft,
+  ToggleRight,
+  Save,
+  Info,
+  FileSpreadsheet,
+} from "lucide-react";
+import * as XLSX from "xlsx";
+import ModuleGuard from "@/components/shared/ModuleGuard";
+import Loader from "@/components/shared/Loader";
+import { useAuthStore } from "@/store/auth.store";
+import { useLanguageStore } from "@/store/language.store";
+import { translations } from "@/lib/translations";
+import api from "@/lib/api/axios";
+import { ApiResponse, UserRole } from "@/types";
+import type { SchoolModule, SchoolOption, Teacher, TeacherDetailTab } from "../types";
+import TeacherFormModal from "./TeacherFormModal";
+import TeacherDetailModal from "./TeacherDetailModal";
+
+export default function TeachersPage() {
+  const { user, isLoading: authLoading } = useAuthStore();
+  const { language } = useLanguageStore();
+  const t = translations[language];
+
+  // List states
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [schools, setSchools] = useState<SchoolOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSchoolFilter, setSelectedSchoolFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
+  // Create/Edit Form Modal states
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [formModalMode, setFormModalMode] = useState<"create" | "edit">("create");
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Form fields
+  const [teacherEmail, setTeacherEmail] = useState("");
+  const [teacherPassword, setTeacherPassword] = useState("");
+  const [teacherFirstName, setTeacherFirstName] = useState("");
+  const [teacherLastName, setTeacherLastName] = useState("");
+  const [teacherPhone, setTeacherPhone] = useState("");
+  const [teacherSchoolId, setTeacherSchoolId] = useState("");
+  const [teacherEmpNumber, setTeacherEmpNumber] = useState("");
+  const [teacherSpecialty, setTeacherSpecialty] = useState("");
+  const [teacherHireDate, setTeacherHireDate] = useState("");
+
+  // Details Modal states
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailTeacher, setDetailTeacher] = useState<Teacher | null>(null);
+  const [detailTab, setDetailTab] = useState<TeacherDetailTab>("general");
+
+  // Permissions Tab states
+  const [schoolModules, setSchoolModules] = useState<SchoolModule[]>([]);
+  const [schoolModulesLoading, setSchoolModulesLoading] = useState(false);
+  const [teacherPermissions, setTeacherPermissions] = useState<string[]>([]);
+  const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
+
+  // Action loading states
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const isAdmin = user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.SCHOOL_ADMIN;
+
+  // Load teachers list
+  const fetchTeachers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let endpoint = "/teachers";
+      if (user?.role === UserRole.SUPER_ADMIN && selectedSchoolFilter) {
+        endpoint += `?schoolId=${selectedSchoolFilter}`;
+      }
+
+      const response = await api.get<ApiResponse<Teacher[]>>(endpoint);
+      setTeachers(response.data.data || []);
+    } catch (err: any) {
+      console.error("Error fetching teachers:", err);
+      setError(t.teachers.alerts.errorFetch);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load schools list (SUPER_ADMIN only)
+  const fetchSchools = async () => {
+    if (user?.role !== UserRole.SUPER_ADMIN) return;
+    try {
+      const response = await api.get<ApiResponse<SchoolOption[]>>("/schools");
+      setSchools(response.data.data || []);
+    } catch (err) {
+      console.error("Error fetching schools list:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchTeachers();
+      fetchSchools();
+    }
+  }, [user, selectedSchoolFilter]);
+
+  // Load detailed teacher data (assignments and school modules status)
+  const fetchTeacherDetails = async (teacherId: string) => {
+    try {
+      const response = await api.get<ApiResponse<Teacher>>(`/teachers/${teacherId}`);
+      const updatedTeacher = response.data.data;
+      setDetailTeacher(updatedTeacher);
+      setTeacherPermissions(updatedTeacher.teacherProfile?.allowedModules || []);
+
+      // If viewing permissions, fetch the school modules to know what is contracted
+      if (isAdmin) {
+        setSchoolModulesLoading(true);
+        const schoolId = updatedTeacher.schoolId;
+        const modulesResponse = await api.get<ApiResponse<SchoolModule[]>>(`/schools/${schoolId}/modules`);
+        setSchoolModules(modulesResponse.data.data || []);
+      }
+    } catch (err) {
+      console.error("Error loading teacher details:", err);
+    } finally {
+      setSchoolModulesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (detailTeacher && isDetailModalOpen) {
+      fetchTeacherDetails(detailTeacher.id);
+    }
+  }, [detailTab]);
+
+  const handleOpenDetails = (teacher: Teacher) => {
+    setDetailTeacher(teacher);
+    setTeacherPermissions(teacher.teacherProfile?.allowedModules || []);
+    setDetailTab("general");
+    setIsDetailModalOpen(true);
+  };
+
+  const handleOpenCreateForm = () => {
+    setFormModalMode("create");
+    setSelectedTeacher(null);
+    setTeacherEmail("");
+    setTeacherPassword("");
+    setTeacherFirstName("");
+    setTeacherLastName("");
+    setTeacherPhone("");
+    setTeacherSchoolId(user?.role === UserRole.SCHOOL_ADMIN ? (user.schoolId || "") : "");
+    setTeacherEmpNumber("");
+    setTeacherSpecialty("");
+    setTeacherHireDate("");
+    setFormError(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEditForm = (teacher: Teacher) => {
+    setFormModalMode("edit");
+    setSelectedTeacher(teacher);
+    setTeacherEmail(teacher.email);
+    setTeacherPassword("");
+    setTeacherFirstName(teacher.firstName);
+    setTeacherLastName(teacher.lastName);
+    setTeacherPhone(teacher.phone || "");
+    setTeacherSchoolId(teacher.schoolId);
+    setTeacherEmpNumber(teacher.teacherProfile?.employeeNumber || "");
+    setTeacherSpecialty(teacher.teacherProfile?.specialty || "");
+    
+    let formattedDate = "";
+    if (teacher.teacherProfile?.hireDate) {
+      formattedDate = new Date(teacher.teacherProfile.hireDate).toISOString().split("T")[0];
+    }
+    setTeacherHireDate(formattedDate);
+    setFormError(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teacherFirstName.trim() || !teacherLastName.trim() || !teacherEmail.trim()) {
+      setFormError(t.login.errorFields);
+      return;
+    }
+    if (formModalMode === "create" && !teacherPassword.trim()) {
+      setFormError(t.login.errorFields);
+      return;
+    }
+    if (user?.role === UserRole.SUPER_ADMIN && !teacherSchoolId) {
+      setFormError("Please select a school");
+      return;
+    }
+
+    try {
+      setFormSubmitting(true);
+      setFormError(null);
+
+      const payload = {
+        email: teacherEmail,
+        firstName: teacherFirstName,
+        lastName: teacherLastName,
+        phone: teacherPhone || undefined,
+        employeeNumber: teacherEmpNumber || undefined,
+        specialty: teacherSpecialty || undefined,
+        hireDate: teacherHireDate || undefined,
+        ...(formModalMode === "create" ? { password: teacherPassword, schoolId: teacherSchoolId } : {}),
+      };
+
+      if (formModalMode === "create") {
+        await api.post("/teachers", payload);
+      } else if (selectedTeacher) {
+        const { email: _, ...updatePayload } = payload as any;
+        await api.patch(`/teachers/${selectedTeacher.id}`, updatePayload);
+      }
+
+      setIsFormModalOpen(false);
+      fetchTeachers();
+    } catch (err: any) {
+      console.error("Form submit error:", err);
+      const backendMessage = err.response?.data?.error || err.response?.data?.message;
+      setFormError(
+        backendMessage ||
+        (formModalMode === "create" ? t.teachers.alerts.errorCreate : t.teachers.alerts.errorUpdate)
+      );
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  // Toggle active/inactive state
+  const handleToggleActive = async (teacher: Teacher) => {
+    try {
+      setActionLoadingId(teacher.id);
+      // Optimistic update
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacher.id ? { ...t, active: !t.active } : t))
+      );
+
+      await api.patch(`/teachers/${teacher.id}`, { active: !teacher.active });
+      
+      // Background reload
+      const response = await api.get<ApiResponse<Teacher[]>>("/teachers");
+      setTeachers(response.data.data || []);
+    } catch (err) {
+      console.error("Error toggling active state:", err);
+      // Revert
+      setTeachers((prev) =>
+        prev.map((t) => (t.id === teacher.id ? { ...t, active: teacher.active } : t))
+      );
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Toggle allowed optional module permission
+  const handleTogglePermission = async (moduleName: string, isAllowed: boolean) => {
+    if (!detailTeacher) return;
+
+    let updatedPermissions = [...teacherPermissions];
+    if (isAllowed) {
+      // Remove
+      updatedPermissions = updatedPermissions.filter((m) => m.toLowerCase() !== moduleName.toLowerCase());
+    } else {
+      // Add
+      updatedPermissions.push(moduleName.toLowerCase());
+    }
+
+    try {
+      setPermissionsSubmitting(true);
+      // Optimistic update
+      setTeacherPermissions(updatedPermissions);
+
+      await api.patch(`/teachers/${detailTeacher.id}`, {
+        allowedModules: updatedPermissions,
+      });
+
+      // Update local detailed teacher view state
+      setDetailTeacher((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          teacherProfile: {
+            ...prev.teacherProfile,
+            allowedModules: updatedPermissions,
+          },
+        };
+      });
+
+      // Dispatch event to refresh layout sidebar if editing own profile (e.g. mock test case)
+      if (detailTeacher.id === user?.id) {
+        window.dispatchEvent(new Event("modulesUpdated"));
+      }
+    } catch (err) {
+      console.error("Error updating teacher permissions:", err);
+      // Revert
+      setTeacherPermissions(detailTeacher.teacherProfile?.allowedModules || []);
+    } finally {
+      setPermissionsSubmitting(false);
+    }
+  };
+
+  // Search & status filter logic
+  const filteredTeachers = teachers.filter((t) => {
+    const query = searchQuery.toLowerCase().trim();
+    const fullName = `${t.firstName} ${t.lastName}`.toLowerCase();
+    const matchesSearch =
+      fullName.includes(query) ||
+      t.email.toLowerCase().includes(query) ||
+      (t.teacherProfile?.employeeNumber && t.teacherProfile.employeeNumber.toLowerCase().includes(query)) ||
+      (t.teacherProfile?.specialty && t.teacherProfile.specialty.toLowerCase().includes(query));
+
+    if (!matchesSearch) return false;
+
+    if (statusFilter === "active") return t.active === true;
+    if (statusFilter === "inactive") return t.active === false;
+
+    return true;
+  });
+
+  // Export report to Excel
+  const handleExportExcel = () => {
+    const exportData = filteredTeachers.map((t, index) => ({
+      "#": index + 1,
+      "Nº Empleado": t.teacherProfile?.employeeNumber || "N/A",
+      "Nombre": t.firstName,
+      "Apellidos": t.lastName,
+      "Correo Electrónico": t.email,
+      "Teléfono": t.phone || "N/A",
+      "Escuela / Plantel": t.school?.name || "N/A",
+      "Especialidad": t.teacherProfile?.specialty || "N/A",
+      "Módulos Permitidos": (t.teacherProfile?.allowedModules && t.teacherProfile.allowedModules.length > 0)
+        ? t.teacherProfile.allowedModules.join(", ")
+        : "Todos",
+      "Estado": t.active ? "Activo" : "Desactivado",
+      "Fecha de Registro": t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "N/A",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    worksheet["!cols"] = [
+      { wch: 5 },   // #
+      { wch: 15 },  // Nº Empleado
+      { wch: 18 },  // Nombre
+      { wch: 22 },  // Apellidos
+      { wch: 32 },  // Correo
+      { wch: 16 },  // Teléfono
+      { wch: 28 },  // Escuela
+      { wch: 22 },  // Especialidad
+      { wch: 28 },  // Módulos
+      { wch: 14 },  // Estado
+      { wch: 16 },  // Fecha
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Maestros");
+
+    const filename = `Reporte_Maestros_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(workbook, filename);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex-1 p-8">
+        <Loader minHeight="400px" />
+      </div>
+    );
+  }
+
+  // Allow access only to admins and teachers
+  if (!user) {
+    return (
+      <div className="min-h-[500px] flex items-center justify-center p-6">
+        <div className="glass-panel max-w-md w-full p-8 text-center space-y-6 border border-red-500/20">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center text-[var(--accent-danger)]">
+            <ShieldAlert size={36} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">Access Denied</h2>
+            <p className="text-sm text-[var(--text-secondary)]">
+              Please log in to view this directory.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ModuleGuard moduleKey="teachers" requireSchoolContext={true}>
+      <div className="space-y-8 animate-fade-in">
+        {/* Header section */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4 text-center md:text-left">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
+            <UserCheck size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="gradient-text text-3xl font-extrabold tracking-tight">
+              {t.teachers.title}
+            </h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-0.5 max-w-2xl">
+              {t.teachers.subtitle}
+            </p>
+          </div>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={handleOpenCreateForm}
+            className="glass-button flex items-center gap-2 text-sm shrink-0"
+          >
+            <Plus size={16} />
+            <span>{t.teachers.registerBtn}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Toolbar panel */}
+      <div className="glass-panel p-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          {/* Search bar */}
+          <div className="relative w-full sm:w-[280px]">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+              <Search size={18} className="text-[var(--text-muted)]" />
+            </span>
+            <input
+              type="text"
+              placeholder={t.header.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="glass-input"
+              style={{ paddingLeft: "44px", height: "42px" }}
+            />
+          </div>
+
+          {/* School filter (SUPER_ADMIN only) */}
+          {user?.role === UserRole.SUPER_ADMIN && (
+            <select
+              value={selectedSchoolFilter}
+              onChange={(e) => setSelectedSchoolFilter(e.target.value)}
+              className="glass-input h-[42px] bg-[var(--bg-surface)] text-sm w-full sm:w-[200px]"
+            >
+              <option value="">Todas las escuelas / All schools</option>
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name} ({s.code})
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Status filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="glass-input h-[42px] bg-[var(--bg-surface)] text-sm w-full sm:w-[170px]"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="inactive">Desactivados</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3 self-end sm:self-auto flex-wrap">
+          {/* Export Excel Button */}
+          <button
+            onClick={handleExportExcel}
+            disabled={filteredTeachers.length === 0}
+            className="glass-button-secondary h-[42px] px-4 text-xs font-semibold flex items-center gap-2 shrink-0 border border-[var(--border-glass)] hover:border-[var(--accent-primary)]/40 transition-all disabled:opacity-40"
+            title="Exportar listado a Excel"
+          >
+            <FileSpreadsheet size={16} className="text-[var(--accent-success)]" />
+            <span>Exportar Excel</span>
+          </button>
+
+          <button
+            onClick={fetchTeachers}
+            className="w-[42px] h-[42px] rounded-lg border border-[var(--border-glass)] bg-white/[0.03] flex items-center justify-center cursor-pointer transition-all hover:bg-white/[0.08]"
+            title="Refresh List"
+          >
+            <RefreshCw size={16} className={`${loading ? "animate-spin" : ""}`} />
+          </button>
+          <span className="text-xs font-semibold text-[var(--text-secondary)] tracking-wide bg-black/10 px-3 py-1.5 rounded-lg border border-[var(--border-glass)]">
+            Total: {filteredTeachers.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Main Table view */}
+      {loading && teachers.length === 0 ? (
+        <Loader />
+      ) : error ? (
+        <div className="glass-panel p-8 text-center space-y-4 border-red-500/20">
+          <p className="text-red-400 text-sm font-semibold">{error}</p>
+          <button onClick={fetchTeachers} className="glass-button-secondary text-xs">
+            Try Again
+          </button>
+        </div>
+      ) : filteredTeachers.length === 0 ? (
+        <div className="glass-panel p-12 text-center text-[var(--text-secondary)] text-sm border-dashed border-[var(--border-glass)]">
+          {t.teachers.noData}
+        </div>
+      ) : (
+        <div className="glass-panel overflow-hidden border border-[var(--border-glass)]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--border-glass)] bg-white/[0.01]">
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                    {t.teachers.table.name}
+                  </th>
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">
+                    {t.teachers.table.email}
+                  </th>
+                  {user?.role === UserRole.SUPER_ADMIN && (
+                    <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                      {t.teachers.details.schoolName || "School"}
+                    </th>
+                  )}
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[140px] hidden sm:table-cell">
+                    {t.teachers.table.employeeNumber}
+                  </th>
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[160px] hidden md:table-cell">
+                    {t.teachers.table.specialty}
+                  </th>
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[120px] text-center">
+                    {t.teachers.table.status}
+                  </th>
+                  <th className="p-4 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider w-[180px] text-right">
+                    {t.teachers.table.actions}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredTeachers.map((teacher) => (
+                  <tr key={teacher.id} className="hover:bg-white/[0.01] transition-colors">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 border border-[var(--border-glass)] flex items-center justify-center text-[var(--accent-primary)] shrink-0 font-bold uppercase">
+                          {teacher.firstName[0] || ""}{teacher.lastName[0] || ""}
+                        </div>
+                        <div>
+                          <span className="font-semibold text-sm text-[var(--text-primary)] block">
+                            {teacher.firstName} {teacher.lastName}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-muted)] md:hidden">
+                            {teacher.email}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-xs text-[var(--text-secondary)] font-mono hidden md:table-cell">
+                      {teacher.email}
+                    </td>
+                    {user?.role === UserRole.SUPER_ADMIN && (
+                      <td className="p-4 text-xs font-semibold text-[var(--text-primary)]">
+                        {teacher.school?.name || teacher.schoolId}
+                      </td>
+                    )}
+                    <td className="p-4 text-xs font-mono text-[var(--text-secondary)] hidden sm:table-cell">
+                      {teacher.teacherProfile?.employeeNumber || "—"}
+                    </td>
+                    <td className="p-4 text-xs text-[var(--text-secondary)] truncate max-w-[150px] hidden md:table-cell">
+                      {teacher.teacherProfile?.specialty || "—"}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold select-none border
+                          ${
+                            teacher.active
+                              ? "bg-emerald-500/10 text-[var(--accent-success)] border-emerald-500/20"
+                              : "bg-rose-500/10 text-[var(--accent-danger)] border-rose-500/20"
+                          }
+                        `}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${teacher.active ? "bg-[var(--accent-success)] animate-pulse" : "bg-[var(--accent-danger)]"}`} />
+                        {teacher.active ? t.schools.status.active : t.schools.status.inactive}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-2">
+                        {/* Eye details button */}
+                        <button
+                          onClick={() => handleOpenDetails(teacher)}
+                          className="p-2 rounded-lg border border-[var(--border-glass)] bg-white/[0.02] hover:bg-white/[0.08] hover:border-[var(--accent-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+                          title={t.schools.tabs.details}
+                        >
+                          <Eye size={14} />
+                        </button>
+                        
+                        {isAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleOpenEditForm(teacher)}
+                              className="p-2 rounded-lg border border-[var(--border-glass)] bg-white/[0.02] hover:bg-white/[0.08] hover:border-[var(--accent-primary-light)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+                              title={t.schools.editBtn}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            
+                            <button
+                              onClick={() => handleToggleActive(teacher)}
+                              disabled={actionLoadingId === teacher.id}
+                              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all disabled:opacity-50
+                                ${
+                                  teacher.active
+                                    ? "bg-red-500/10 hover:bg-red-500/20 border-red-500/20 text-[var(--accent-danger)]"
+                                    : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20 text-[var(--accent-success)]"
+                                }
+                              `}
+                            >
+                              {actionLoadingId === teacher.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : teacher.active ? (
+                                <X size={12} />
+                              ) : (
+                                <Check size={12} />
+                              )}
+                              <span>
+                                {teacher.active ? t.schools.deactivateBtn : t.schools.activateBtn}
+                              </span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Create/Edit Teacher */}
+      {mounted && isFormModalOpen && (
+        <TeacherFormModal
+          mode={formModalMode}
+          t={t}
+          error={formError}
+          submitting={formSubmitting}
+          canSelectSchool={user?.role === UserRole.SUPER_ADMIN}
+          schools={schools}
+          email={teacherEmail}
+          password={teacherPassword}
+          firstName={teacherFirstName}
+          lastName={teacherLastName}
+          phone={teacherPhone}
+          schoolId={teacherSchoolId}
+          employeeNumber={teacherEmpNumber}
+          specialty={teacherSpecialty}
+          hireDate={teacherHireDate}
+          onEmailChange={setTeacherEmail}
+          onPasswordChange={setTeacherPassword}
+          onFirstNameChange={setTeacherFirstName}
+          onLastNameChange={setTeacherLastName}
+          onPhoneChange={setTeacherPhone}
+          onSchoolIdChange={setTeacherSchoolId}
+          onEmployeeNumberChange={setTeacherEmpNumber}
+          onSpecialtyChange={setTeacherSpecialty}
+          onHireDateChange={setTeacherHireDate}
+          onClose={() => setIsFormModalOpen(false)}
+          onSubmit={handleFormSubmit}
+        />
+      )}
+
+      {/* Modal - Teacher Detailed View (Tabs: General, Permissions, Assignments) */}
+      {mounted && isDetailModalOpen && detailTeacher && (
+        <TeacherDetailModal
+          detailTeacher={detailTeacher}
+          detailTab={detailTab}
+          isAdmin={isAdmin}
+          language={language}
+          schoolModules={schoolModules}
+          schoolModulesLoading={schoolModulesLoading}
+          teacherPermissions={teacherPermissions}
+          permissionsSubmitting={permissionsSubmitting}
+          t={t}
+          onClose={() => setIsDetailModalOpen(false)}
+          onTabChange={setDetailTab}
+          onTogglePermission={handleTogglePermission}
+        />
+      )}
+      </div>
+    </ModuleGuard>
+  );
+}

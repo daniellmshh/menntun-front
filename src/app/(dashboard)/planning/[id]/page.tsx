@@ -43,6 +43,7 @@ import { PlanningModalidadLabels } from "@/modules/planning/constants";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
 import Loader from "@/components/shared/Loader";
+import ModuleGuard from "@/components/shared/ModuleGuard";
 import { sanitizeInput } from "@/lib/utils";
 
 // ─── Colors ───────────────────────────────────────────────────────────────────
@@ -92,7 +93,7 @@ const StatusBadge = ({ status }: { status: PlanningStatus }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function PlanningDetailPage() {
+function PlanningDetailContent() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const { language } = useLanguageStore();
@@ -727,12 +728,21 @@ export default function PlanningDetailPage() {
             Fases del Proyecto
           </h2>
           <div className="space-y-4">
-            {(planning.fases as any[]).map((fase: any, idx: number) => (
-              <div key={idx} className={`border-l-4 pl-4 ${MOMENTO_COLORS[idx % MOMENTO_COLORS.length]}`}>
-                <h3 className="font-semibold text-[var(--text-primary)] mb-2">{fase.nombre}</h3>
-                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{fase.actividades}</p>
-              </div>
-            ))}
+            {planning.fases.map((fase, idx) => {
+              const phase = fase && typeof fase === "object"
+                ? fase as Record<string, unknown>
+                : {};
+              const name = typeof phase.nombre === "string" ? phase.nombre : "Fase";
+              const activities =
+                typeof phase.actividades === "string" ? phase.actividades : "";
+
+              return (
+                <div key={idx} className={`border-l-4 pl-4 ${MOMENTO_COLORS[idx % MOMENTO_COLORS.length]}`}>
+                  <h3 className="font-semibold text-[var(--text-primary)] mb-2">{name}</h3>
+                  <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{activities}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -749,5 +759,13 @@ export default function PlanningDetailPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function PlanningDetailPage() {
+  return (
+    <ModuleGuard moduleKey="planning">
+      <PlanningDetailContent />
+    </ModuleGuard>
   );
 }
