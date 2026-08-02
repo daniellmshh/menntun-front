@@ -106,12 +106,19 @@ export default function GradesPage() {
     catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible guardar la fórmula."); }
     finally { setSubmitting(false); }
   }
+  async function closePeriod() {
+    if (!confirm("Cerrar este período bloqueará evaluaciones y ponderaciones de la materia seleccionada. ¿Continuar?")) return;
+    setSubmitting(true); setError(null);
+    try { await api.post("/grades/periods/close", undefined, { params: { groupId, subjectId, periodId } }); await loadEvaluations(); }
+    catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible cerrar el período."); }
+    finally { setSubmitting(false); }
+  }
 
   return <ModuleGuard moduleKey="grades" requireSchoolContext={true}>
     <div className="p-6 lg:p-8 space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow"><Award className="text-white" /></div><div><h1 className="gradient-text text-3xl font-extrabold">Evaluaciones</h1><p className="text-sm text-[var(--text-secondary)]">Captura evidencias y consulta el avance por período.</p></div></div>
-        <div className="flex flex-wrap gap-2"><button onClick={() => loadEvaluations()} className="glass-button"><RefreshCw size={18} />Actualizar</button>{isAdmin && <><button onClick={() => setShowCategory(true)} className="glass-button"><Tags size={18} />Categorías</button><button disabled={!groupId || !subjectId || !periodId} onClick={() => setShowPolicy(true)} className="glass-button"><Settings2 size={18} />Fórmula</button></>}<button disabled={!groupId || !subjectId || !periodId || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button"><Plus size={18} />Nueva evaluación</button></div>
+        <div className="flex flex-wrap gap-2"><button onClick={() => loadEvaluations()} className="glass-button"><RefreshCw size={18} />Actualizar</button>{isAdmin && <><button onClick={() => setShowCategory(true)} className="glass-button"><Tags size={18} />Categorías</button><button disabled={!groupId || !subjectId || !periodId} onClick={() => setShowPolicy(true)} className="glass-button"><Settings2 size={18} />Fórmula</button><button disabled={!groupId || !subjectId || !periodId || submitting} onClick={closePeriod} className="glass-button">Cerrar período</button></>}<button disabled={!groupId || !subjectId || !periodId || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button"><Plus size={18} />Nueva evaluación</button></div>
       </header>
       {error && <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text-primary)]">{error}</div>}
       {loading ? <Loader minHeight="300px" /> : <>
