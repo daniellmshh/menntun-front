@@ -144,8 +144,8 @@ export interface Planning {
   pda?: string | null;
   relevanciaSocial?: string | null;
   produccionSugerida?: string | null;
-  fases?: any[] | null;
-  recursos?: any | null;
+  fases?: unknown[] | null;
+  recursos?: unknown | null;
   content?: string | null;
   // New Sara format fields
   periodoProyecto?: string | null;

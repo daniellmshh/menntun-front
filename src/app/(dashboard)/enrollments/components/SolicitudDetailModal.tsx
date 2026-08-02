@@ -1,20 +1,100 @@
-import React, { useState } from "react";
-import { X, User, FileText, DollarSign, Users } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { Check, FileText, Upload, User, Users, X, DollarSign, XCircle } from "lucide-react";
 import api from "@/lib/api/axios";
 
 interface DetailModalProps {
   solicitud: any;
   onClose: () => void;
   onSuccess: () => void;
+  onDocumentsChanged?: () => void;
+}
+
+interface SolicitudDocumento {
+  id: string;
+  tipoDocumentoId: string | null;
+  nombreDocumento: string | null;
+  tipoDocumento: string;
+  obligatorio: boolean;
+  fileUrl: string | null;
+  estado: "PENDIENTE" | "RECIBIDO" | "VALIDADO" | "RECHAZADO";
+  observaciones: string | null;
 }
 
 export default function SolicitudDetailModal({
   solicitud,
   onClose,
   onSuccess,
+  onDocumentsChanged,
 }: DetailModalProps) {
   const [activeTab, setActiveTab] = useState("ALUMNO");
   const [loading, setLoading] = useState(false);
+  const [documentos, setDocumentos] = useState<SolicitudDocumento[]>([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(true);
+
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setLoadingDocuments(true);
+      const response = await api.get(`/enrollments/${solicitud.id}/documents`);
+      setDocumentos(response.data?.data || []);
+    } catch (error) {
+      console.error("No se pudo cargar el expediente documental", error);
+    } finally {
+      setLoadingDocuments(false);
+    }
+  }, [solicitud.id]);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, [fetchDocuments]);
+
+  const handleDocumentUpload = async (
+    tipoDocumentoId: string | null,
+    file?: File,
+  ) => {
+    if (!tipoDocumentoId || !file) return;
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("tipoDocumentoId", tipoDocumentoId);
+      formData.append("file", file);
+      await api.post(`/enrollments/${solicitud.id}/documents`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      await fetchDocuments();
+      onDocumentsChanged?.();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || "Error al subir el documento");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDocumentStatus = async (
+    documentId: string,
+    estado: "VALIDADO" | "RECHAZADO",
+  ) => {
+    const observaciones =
+      estado === "RECHAZADO"
+        ? prompt("Indica el motivo de rechazo para solicitar una corrección:")
+        : undefined;
+
+    if (estado === "RECHAZADO" && observaciones === null) return;
+
+    try {
+      setLoading(true);
+      await api.patch(`/enrollments/documents/${documentId}`, {
+        estado,
+        observaciones: observaciones || undefined,
+      });
+      await fetchDocuments();
+      onDocumentsChanged?.();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || "Error al actualizar el documento");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleApprove = async () => {
     try {
@@ -187,9 +267,81 @@ export default function SolicitudDetailModal({
           )}
 
           {activeTab === "DOCUMENTOS" && (
-            <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)] animate-fade-in">
-              <FileText size={48} className="mb-4 opacity-50" />
-              <p>No hay documentos cargados en esta solicitud.</p>
+            <div className="space-y-3 animate-fade-in">
+              <p className="text-sm text-[var(--text-secondary)]">
+                La matrícula puede continuar de forma condicional mientras existan documentos obligatorios pendientes.
+              </p>
+              {loadingDocuments ? (
+                <p className="py-8 text-center text-[var(--text-muted)]">Cargando expediente...</p>
+              ) : documentos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
+                  <FileText size={48} className="mb-4 opacity-50" />
+                  <p>Esta solicitud no tiene requisitos documentales configurados.</p>
+                </div>
+              ) : (
+                documentos.map((documento) => (
+                  <div
+                    key={documento.id}
+                    className="rounded-xl border border-[var(--border-glass)] bg-[var(--bg-surface)]/50 p-4"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-[var(--text-primary)]">
+                            {documento.nombreDocumento || documento.tipoDocumento}
+                          </p>
+                          {documento.obligatorio && (
+                            <span className="rounded-full bg-[hsla(354,85%,56%,0.15)] px-2 py-0.5 text-xs font-semibold text-[hsl(354,85%,70%)]">
+                              Obligatorio
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                          Estado: {documento.estado}
+                          {documento.observaciones ? ` · ${documento.observaciones}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {documento.tipoDocumentoId && (
+                          <label className="glass-button-secondary cursor-pointer px-3 py-2 text-sm">
+                            <Upload size={15} />
+                            {documento.fileUrl ? "Reemplazar" : "Subir"}
+                            <input
+                              type="file"
+                              className="sr-only"
+                              disabled={loading}
+                              onChange={(event) =>
+                                handleDocumentUpload(
+                                  documento.tipoDocumentoId,
+                                  event.target.files?.[0],
+                                )
+                              }
+                            />
+                          </label>
+                        )}
+                        {documento.estado === "RECIBIDO" && (
+                          <>
+                            <button
+                              onClick={() => handleDocumentStatus(documento.id, "VALIDADO")}
+                              disabled={loading}
+                              className="glass-button px-3 py-2 text-sm"
+                            >
+                              <Check size={15} /> Validar
+                            </button>
+                            <button
+                              onClick={() => handleDocumentStatus(documento.id, "RECHAZADO")}
+                              disabled={loading}
+                              className="rounded-xl border border-[hsla(354,85%,56%,0.5)] px-3 py-2 text-sm font-semibold text-[hsl(354,85%,70%)]"
+                            >
+                              <XCircle size={15} /> Rechazar
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           )}
 

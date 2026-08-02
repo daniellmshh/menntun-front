@@ -1,23 +1,17 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api/axios";
 import { ApiResponse } from "@/types";
-import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth.store";
 
-export const ACTIVE_MODULES_QUERY_KEY = ["activeModules"];
+export const ACTIVE_MODULES_QUERY_KEY = ["activeModules"] as const;
 
 export function useActiveModules() {
-  const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-
-  // When the logged-in user changes (e.g. after re-login), invalidate the cached modules
-  // so the next render always fetches fresh data from the server.
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ACTIVE_MODULES_QUERY_KEY });
-  }, [user?.id, queryClient]);
+  const activeSchoolId = user?.activeSchoolId ?? user?.schoolId ?? null;
 
   const { data, isLoading } = useQuery<string[]>({
-    queryKey: ACTIVE_MODULES_QUERY_KEY,
+    // Module activation is scoped to both the current user and school context.
+    queryKey: [...ACTIVE_MODULES_QUERY_KEY, user?.id ?? null, activeSchoolId],
     queryFn: async () => {
       const response = await api.get<ApiResponse<string[]>>("/auth/me/modules");
       return response.data.data || [];

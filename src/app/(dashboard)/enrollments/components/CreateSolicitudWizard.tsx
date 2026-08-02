@@ -72,6 +72,11 @@ export default function CreateSolicitudWizard({
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleSubmit = async () => {
+    if (formData.alumnos.some((alumno) => !alumno.gradeId || !alumno.groupId)) {
+      alert("Selecciona grado y grupo para cada alumno antes de crear la solicitud.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -101,7 +106,7 @@ export default function CreateSolicitudWizard({
               formDataUpload.append("tipoDocumentoId", tipoId);
               formDataUpload.append("file", file);
               await api.post(
-                `/enrollments/${solicitudId}/upload`,
+                `/enrollments/${solicitudId}/documents`,
                 formDataUpload,
                 {
                   headers: { "Content-Type": "multipart/form-data" },
@@ -296,6 +301,7 @@ export default function CreateSolicitudWizard({
                       <select
                         className="glass-input w-full"
                         value={alumno.gradeId}
+                        required
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
                           newAlumnos[index].gradeId = e.target.value;
@@ -324,6 +330,7 @@ export default function CreateSolicitudWizard({
                       <select
                         className="glass-input w-full"
                         value={alumno.groupId}
+                        required
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
                           newAlumnos[index].groupId = e.target.value;
