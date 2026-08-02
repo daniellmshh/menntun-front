@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { m, Variants } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 type MotionTag = "div" | "section" | "h1" | "h2" | "p";
 
@@ -10,6 +10,18 @@ interface MotionWrapperProps {
   className?: string;
   as?: MotionTag;
 }
+
+// `m` only provides animation features when it is paired with LazyMotion.
+// The landing renders outside that provider, so using it left every section
+// at its initial `hidden` variant after hydration. Keep the full `motion`
+// factory and map the allowed semantic tags explicitly to preserve typing.
+const motionComponents = {
+  div: motion.div,
+  section: motion.section,
+  h1: motion.h1,
+  h2: motion.h2,
+  p: motion.p,
+};
 
 const fadeUpVariants: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -42,7 +54,7 @@ export function StaggerContainer({
   as = "div",
   id,
 }: MotionWrapperProps & { id?: string }) {
-  const MotionComponent = m[as];
+  const MotionComponent = motionComponents[as];
   return (
     <MotionComponent
       id={id}
@@ -58,7 +70,7 @@ export function StaggerContainer({
 }
 
 export function FadeUp({ children, className, as = "div" }: MotionWrapperProps) {
-  const MotionComponent = m[as];
+  const MotionComponent = motionComponents[as];
   return (
     <MotionComponent variants={fadeUpVariants} className={className}>
       {children}
@@ -67,7 +79,7 @@ export function FadeUp({ children, className, as = "div" }: MotionWrapperProps) 
 }
 
 export function FadeLeft({ children, className, as = "div" }: MotionWrapperProps) {
-  const MotionComponent = m[as];
+  const MotionComponent = motionComponents[as];
   return (
     <MotionComponent variants={fadeLeftVariants} className={className}>
       {children}
@@ -76,7 +88,7 @@ export function FadeLeft({ children, className, as = "div" }: MotionWrapperProps
 }
 
 export function FadeRight({ children, className, as = "div" }: MotionWrapperProps) {
-  const MotionComponent = m[as];
+  const MotionComponent = motionComponents[as];
   return (
     <MotionComponent variants={fadeRightVariants} className={className}>
       {children}
