@@ -1,51 +1,34 @@
-import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import LegalPageLayout from "@/components/legal/LegalPageLayout";
+import { legalProfile } from "@/lib/legal";
 
-export const metadata = {
-  title: "Privacidad | Menntun",
-  description: "Aviso de privacidad de Menntun School Management."
+export const metadata: Metadata = {
+  title: "Aviso de Privacidad | Menntun",
+  description: "Aviso de privacidad integral de Menntun.",
 };
 
 export default function PrivacyPage() {
-  return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-sans py-24">
-      <div className="max-w-4xl mx-auto px-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8">
-          <ArrowLeft size={16} /> Volver al inicio
-        </Link>
-        <div className="glass-panel p-8 md:p-12">
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-6">Aviso de Privacidad</h1>
-          <p className="text-[var(--text-secondary)] mb-8 text-sm">Última actualización: {new Date().toLocaleDateString()}</p>
-          
-          <div className="space-y-6 text-[var(--text-secondary)] leading-relaxed">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">1. Introducción</h2>
-            <p>
-              Este documento es un texto provisional. Aquí se detallarán las políticas de recolección, uso y protección de datos personales de los usuarios de la plataforma Menntun, en cumplimiento con las leyes de protección de datos aplicables.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">2. Información Recopilada</h2>
-            <p>
-              [Texto Placeholder] Menntun recopila información de contacto y datos académicos necesarios para el funcionamiento de los módulos contratados por la institución educativa.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">3. Uso de la Información</h2>
-            <p>
-              [Texto Placeholder] Los datos son utilizados exclusivamente para la prestación de los servicios educativos, la generación de planeaciones mediante IA y el control administrativo de la escuela.
-            </p>
+  return <LegalPageLayout title="Aviso de Privacidad Integral" description="Aplicable al sitio web, demostraciones y plataforma Menntun.">
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">1. Identidad del responsable y alcance</h2><p><strong>{legalProfile.responsibleName}</strong>, comercialmente identificado como <strong>{legalProfile.serviceName}</strong>, con domicilio en {legalProfile.responsibleAddress}, es responsable del tratamiento de los datos personales que recabe directamente a través de este sitio, solicitudes de demostración y la relación comercial con sus clientes.</p><p className="mt-3">Respecto de los datos que una institución educativa capture en la plataforma —incluidos datos de sus alumnos, familias, docentes y personal—, la institución contratante determina las finalidades y actúa como responsable. Menntun actúa como encargado y sólo los trata para prestar el servicio, conforme al contrato y al acuerdo de tratamiento de datos aplicable.</p></section>
 
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">4. Seguridad y Retención</h2>
-            <p>
-              [Texto Placeholder] Todos los datos están protegidos por encriptación en tránsito y en reposo (Row-Level Security en la base de datos).
-            </p>
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">2. Datos que podemos tratar</h2><p>Según la relación que exista con usted y los módulos contratados, podemos tratar datos de identificación y contacto; datos profesionales, académicos y administrativos; credenciales de acceso; registros técnicos y de seguridad; información de inscripción, cobros y pagos; registros de asistencia; y documentos cargados por la institución.</p><p className="mt-3">Algunas instituciones pueden registrar datos sensibles, como información de salud o tipo sanguíneo de alumnos. Menntun no solicita esos datos para fines propios: los trata únicamente cuando la institución los captura y cuando son necesarios para la operación educativa que ésta define.</p></section>
 
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">5. Contacto</h2>
-            <p>
-              Para ejercer sus derechos ARCO, puede contactarnos a través de los canales oficiales.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">3. Finalidades</h2><p><strong>Finalidades necesarias:</strong> proporcionar acceso a la plataforma; administrar cuentas, módulos y soporte; operar inscripciones, expedientes, estructura académica, evaluaciones, asistencia y cargos; proteger la seguridad e integridad del servicio; atender solicitudes; prevenir uso no autorizado; y cumplir obligaciones contractuales o legales.</p><p className="mt-3"><strong>Finalidades no necesarias:</strong> Menntun no vende datos personales ni los utiliza para publicidad comportamental. Las mejoras de producto se realizan con información agregada o disociada cuando sea posible. Si en el futuro se incorpora una finalidad opcional que requiera consentimiento, se solicitará antes de utilizar sus datos para ella.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">4. Inteligencia artificial y contenidos pedagógicos</h2><p>Cuando una institución habilita el módulo de planeación, Menntun procesa las instrucciones y los datos pedagógicos que el usuario envía para generar una propuesta. El resultado es material de apoyo: debe ser revisado, ajustado y aprobado por personal docente o administrativo antes de utilizarse. Menntun no usa los datos de estudiantes capturados en la plataforma para entrenar modelos de inteligencia artificial.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">5. Menores de edad</h2><p>La plataforma no está dirigida a que niñas, niños o adolescentes proporcionen directamente datos a Menntun con fines comerciales. La institución educativa y quienes ejercen patria potestad o tutela son responsables de contar con la base jurídica, información y autorizaciones que correspondan para el uso escolar de la plataforma. Menntun limita el acceso a la información al rol y a la escuela autorizados.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">6. Encargados, transferencias y servicios de infraestructura</h2><p>Para prestar el servicio podemos utilizar proveedores de infraestructura, autenticación, almacenamiento, mensajería, analítica de rendimiento e inteligencia artificial. Estos proveedores pueden tratar datos por cuenta de Menntun o de la institución, bajo instrucciones y medidas contractuales aplicables. No realizamos transferencias de datos a terceros para finalidades comerciales ajenas al servicio. Cuando una transferencia requiera consentimiento conforme a la legislación aplicable, se recabará previamente.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">7. Seguridad y conservación</h2><p>Aplicamos medidas administrativas, técnicas y organizacionales razonables para reducir riesgos de acceso, uso, alteración, pérdida o divulgación no autorizados. Los datos se conservan durante la vigencia de la relación de servicio y, al terminarla, se devuelven, bloquean o eliminan conforme al contrato, las instrucciones de la institución y los plazos legales aplicables.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">8. Derechos ARCO y limitación de uso</h2><p>Usted, o su representante legal, puede solicitar acceso, rectificación, cancelación u oposición al tratamiento de sus datos personales, así como limitar su uso o divulgación. Envíe una solicitud a <strong>{legalProfile.privacyEmail}</strong> con: nombre y medio para recibir respuesta; documentos que acrediten identidad o representación; descripción clara de los datos y del derecho que desea ejercer; y cualquier elemento que facilite localizar la información.</p><p className="mt-3">Responderemos en los plazos previstos por la legislación aplicable. Para datos capturados por una institución educativa, la solicitud debe dirigirse primero a esa institución; Menntun la asistirá conforme a sus obligaciones como encargado.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">9. Cambios al aviso</h2><p>Podemos actualizar este aviso por cambios legales, operativos o de seguridad. La versión vigente estará disponible en esta página e indicará su fecha de actualización. Si un cambio modifica de forma relevante las finalidades o el tratamiento, se comunicará por los medios razonables disponibles.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">10. Contacto</h2><p>Para asuntos de privacidad escriba a <strong>{legalProfile.privacyEmail}</strong>. Para asuntos generales o contractuales, escriba a <strong>{legalProfile.legalEmail}</strong>.</p><p className="mt-3 text-sm">Este aviso debe revisarse y aprobarse por asesoría jurídica antes de publicarse, considerando la razón social, domicilio, contrato de tratamiento y operación real de Menntun.</p></section>
+    <p className="border-t border-[var(--border-glass)] pt-6 text-sm">Consulte también los <Link className="text-[var(--accent-secondary)] hover:underline" href="/terms">Términos y Condiciones de Uso</Link>.</p>
+  </LegalPageLayout>;
 }
