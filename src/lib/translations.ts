@@ -25,7 +25,9 @@ export const translations = {
       finances: "Finances",
       catalogo: "Catalog",
       cargos: "Charges",
-      documents: "Documents"
+      documents: "Documents",
+      evaluationcategories: "Evaluation Categories",
+      financialconcepts: "Financial Concepts"
     },
     header: {
       searchPlaceholder: "Search metrics, users...",
@@ -509,7 +511,9 @@ export const translations = {
       finances: "Finanzas",
       catalogo: "Catálogo",
       cargos: "Cargos",
-      documents: "Documentos"
+      documents: "Documentos",
+      evaluationcategories: "Categorías de evaluación",
+      financialconcepts: "Conceptos financieros"
     },
     header: {
       searchPlaceholder: "Buscar métricas, usuarios...",

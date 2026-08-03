@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Plus, Search, UserPlus, Filter, ShieldCheck, Users } from "lucide-react";
+import { FileText, Plus, Search, UserPlus, Filter, ShieldCheck, Users } from "lucide-react";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
@@ -28,6 +28,7 @@ export default function EnrollmentsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null);
+  const [detailInitialTab, setDetailInitialTab] = useState<"ALUMNO" | "TUTORES" | "DOCUMENTOS" | "CARGOS">("ALUMNO");
 
   const fetchSolicitudes = useCallback(async () => {
     try {
@@ -63,6 +64,19 @@ export default function EnrollmentsPage() {
       (filterExpediente === "COMPLETO" && pendingRequiredDocuments === 0);
     return matchesSearch && matchesEstado && matchesTipo && matchesExpediente;
   });
+
+  const pendingExpedientes = solicitudes.filter(
+    (solicitud) => getPendingRequiredDocuments(solicitud) > 0,
+  ).length;
+
+  const openDetail = (
+    solicitud: any,
+    initialTab: "ALUMNO" | "TUTORES" | "DOCUMENTOS" | "CARGOS" = "ALUMNO",
+  ) => {
+    setSelectedSolicitud(solicitud);
+    setDetailInitialTab(initialTab);
+    setIsDetailModalOpen(true);
+  };
 
   return (
     <ModuleGuard moduleKey="enrollments" requireSchoolContext={true}>
@@ -118,19 +132,23 @@ export default function EnrollmentsPage() {
                 <p className="text-3xl font-extrabold">{solicitudes.filter(s => s.estado === 'APROBADA' || s.estado === 'MATRICULADO').length}</p>
               </div>
 
-              <div className="glass-panel p-6 rounded-2xl border border-[var(--accent-primary)] border-opacity-30 relative overflow-hidden group">
+              <button
+                type="button"
+                onClick={() => setFilterExpediente("INCOMPLETO")}
+                className="glass-panel p-6 rounded-2xl border border-[var(--accent-primary)] border-opacity-30 relative overflow-hidden group text-left transition-transform hover:-translate-y-0.5"
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-transparent opacity-5 group-hover:opacity-10 transition-opacity"></div>
                 <div className="flex items-center justify-between relative z-10">
                   <div>
-                    <h3 className="font-semibold text-lg text-[var(--text-secondary)] mb-1">Cupo Disponible</h3>
-                    <p className="text-3xl font-extrabold gradient-text">45 / 150</p>
-                    <p className="text-xs text-[var(--text-muted)] mt-2">Nuevos ingresos proyectados</p>
+                    <h3 className="font-semibold text-lg text-[var(--text-secondary)] mb-1">Expedientes pendientes</h3>
+                    <p className="text-3xl font-extrabold gradient-text">{pendingExpedientes}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-2">Ver y completar papelería pendiente</p>
                   </div>
-                  <div className="w-16 h-16 rounded-full border-4 border-[var(--accent-primary)] border-opacity-20 flex items-center justify-center">
-                    <span className="font-bold text-[var(--accent-primary)]">30%</span>
+                  <div className="w-16 h-16 rounded-full border-4 border-[var(--accent-primary)] border-opacity-20 flex items-center justify-center text-[var(--accent-primary)]">
+                    <FileText size={25} />
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
 
             {/* List Section */}
@@ -211,10 +229,7 @@ export default function EnrollmentsPage() {
                       </tr>
                     ) : (
                       filteredData.map((s) => (
-                        <tr key={s.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => {
-                          setSelectedSolicitud(s);
-                          setIsDetailModalOpen(true);
-                        }}>
+                        <tr key={s.id} className="hover:bg-white/[0.02] transition-colors cursor-pointer group" onClick={() => openDetail(s)}>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="w-10 h-10 rounded-full bg-[hsla(263,90%,60%,0.15)] flex items-center justify-center text-[var(--accent-primary)] font-bold shadow-sm">
@@ -244,7 +259,7 @@ export default function EnrollmentsPage() {
                             </span>
                           </td>
                           <td className="p-4 text-sm text-[var(--text-secondary)]">
-                            {s.gradeId || "-"} <span className="opacity-50 mx-1">/</span> {s.groupId || "-"}
+                            {s.group?.grade?.name || "Sin grado"} <span className="opacity-50 mx-1">/</span> {s.group?.name || "Sin grupo"}
                           </td>
                           <td className="p-4">
                             {!(s.documentos || []).some((documento: any) => documento.obligatorio) ? (
@@ -262,8 +277,15 @@ export default function EnrollmentsPage() {
                             )}
                           </td>
                           <td className="p-4 text-center">
-                            <button className="text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors p-2 bg-white/5 hover:bg-white/10 rounded-lg">
-                              Ver Detalle
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openDetail(s, "DOCUMENTOS");
+                              }}
+                              className="inline-flex items-center gap-2 rounded-lg bg-white/5 p-2 text-[var(--text-secondary)] transition-colors hover:bg-white/10 hover:text-[var(--accent-primary)]"
+                            >
+                              <FileText size={16} /> Expediente
                             </button>
                           </td>
                         </tr>
@@ -288,7 +310,9 @@ export default function EnrollmentsPage() {
 
         {isDetailModalOpen && selectedSolicitud && (
           <SolicitudDetailModal
+            key={`${selectedSolicitud.id}-${detailInitialTab}`}
             solicitud={selectedSolicitud}
+            initialTab={detailInitialTab}
             onClose={() => setIsDetailModalOpen(false)}
             onSuccess={() => {
               setIsDetailModalOpen(false);

@@ -324,10 +324,10 @@ export default function GroupDetailDrawer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-end"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.5)" }}
     >
-      <div className="w-full max-w-lg h-full glass-panel border-l border-[var(--border-glass)] flex flex-col shadow-main animate-slide-in" style={{ maxWidth: 560 }}>
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl border border-[var(--border-glass)] glass-panel shadow-main animate-slide-up">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--border-glass)]">
           <div className="flex items-center gap-3">
@@ -364,7 +364,7 @@ export default function GroupDetailDrawer({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar p-5 space-y-4">
           {alert && (
             <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm border ${
               alert.type === "success"

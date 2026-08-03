@@ -4,6 +4,7 @@ import api from "@/lib/api/axios";
 
 interface DetailModalProps {
   solicitud: any;
+  initialTab?: "ALUMNO" | "TUTORES" | "DOCUMENTOS" | "CARGOS";
   onClose: () => void;
   onSuccess: () => void;
   onDocumentsChanged?: () => void;
@@ -22,11 +23,12 @@ interface SolicitudDocumento {
 
 export default function SolicitudDetailModal({
   solicitud,
+  initialTab = "ALUMNO",
   onClose,
   onSuccess,
   onDocumentsChanged,
 }: DetailModalProps) {
-  const [activeTab, setActiveTab] = useState("ALUMNO");
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(false);
   const [documentos, setDocumentos] = useState<SolicitudDocumento[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(true);
@@ -229,10 +231,10 @@ export default function SolicitudDetailModal({
                 </div>
                 <div className="p-4 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-surface)]/50">
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider mb-1">
-                    Grado / Grupo ID
+                    Grado / Grupo
                   </p>
                   <p className="text-lg font-semibold text-[var(--text-primary)]">
-                    {solicitud.gradeId || "-"} / {solicitud.groupId || "-"}
+                    {solicitud.group?.grade?.name || "Sin grado asignado"} / {solicitud.group?.name || "Sin grupo asignado"}
                   </p>
                 </div>
               </div>

@@ -170,7 +170,7 @@ export default function DocumentsCatalogPage() {
                   filteredData.map((doc) => (
                     <tr key={doc.id} className="border-b border-[var(--border-glass)] hover:bg-white/5 transition-colors">
                       <td className="p-4">{doc.orden}</td>
-                      <td className="p-4 font-medium text-white">{doc.nombre}</td>
+                      <td className="p-4 font-medium text-[var(--text-primary)]">{doc.nombre}</td>
                       <td className="p-4 text-[var(--text-secondary)]"><span className="px-2 py-1 bg-black/40 rounded-md text-xs font-mono">{doc.slug}</span></td>
                       <td className="p-4">
                         {doc.obligatorio ? (
