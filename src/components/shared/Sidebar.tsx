@@ -167,7 +167,7 @@ const NAV_ITEMS: SidebarItem[] = [
     name: "Attendance",
     href: "/attendance",
     icon: Calendar,
-    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.ATTENDANCE_OPERATOR, UserRole.TEACHER],
+    requiredRoles: [UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.ATTENDANCE_OPERATOR, UserRole.TEACHER, UserRole.PARENT, UserRole.TUTOR, UserRole.STUDENT],
     moduleKey: "attendance",
   },
   {
