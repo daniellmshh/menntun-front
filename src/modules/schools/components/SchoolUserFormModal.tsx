@@ -6,7 +6,7 @@ import ModalShell from "@/components/shared/ModalShell";
 import { translations } from "@/lib/translations";
 
 type UserModalMode = "create" | "edit";
-export type SchoolUserPosition = "admin" | "director" | "treasurer" | "teacher";
+export type SchoolUserPosition = "admin" | "director" | "treasurer" | "teacher" | "attendance_operator";
 type TextSetter = Dispatch<SetStateAction<string>>;
 
 interface SchoolUserFormModalProps {
@@ -98,6 +98,7 @@ export default function SchoolUserFormModal({
                 <option value="director">{t.schools.users.modal.positionOptions.director}</option>
                 <option value="treasurer">{t.schools.users.modal.positionOptions.treasurer}</option>
                 <option value="teacher">{t.schools.users.modal.positionOptions.teacher}</option>
+                <option value="attendance_operator">Operador de asistencias</option>
               </select>
             </div>
 

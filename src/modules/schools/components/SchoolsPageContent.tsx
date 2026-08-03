@@ -357,6 +357,8 @@ export default function SchoolsPage() {
     // Map database role to userPosition dropdown selection
     if (schoolUser.role === UserRole.TEACHER) {
       setUserPosition("teacher");
+    } else if (schoolUser.role === UserRole.ATTENDANCE_OPERATOR) {
+      setUserPosition("attendance_operator");
     } else {
       setUserPosition("admin");
     }
@@ -382,6 +384,8 @@ export default function SchoolsPage() {
       let dbRole: UserRole = UserRole.SCHOOL_ADMIN;
       if (userPosition === "teacher") {
         dbRole = UserRole.TEACHER;
+      } else if (userPosition === "attendance_operator") {
+        dbRole = UserRole.ATTENDANCE_OPERATOR;
       }
 
       if (userModalMode === "create") {
