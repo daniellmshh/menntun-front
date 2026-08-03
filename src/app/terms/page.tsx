@@ -1,46 +1,39 @@
-import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import LegalPageLayout from "@/components/legal/LegalPageLayout";
+import { legalProfile } from "@/lib/legal";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Términos y Condiciones | Menntun",
-  description: "Términos y Condiciones de Uso de Menntun School Management."
+  description: "Términos y condiciones de uso de la plataforma Menntun.",
 };
 
 export default function TermsPage() {
-  return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] font-sans py-24">
-      <div className="max-w-4xl mx-auto px-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-8">
-          <ArrowLeft size={16} /> Volver al inicio
-        </Link>
-        <div className="glass-panel p-8 md:p-12">
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-6">Términos y Condiciones</h1>
-          <p className="text-[var(--text-secondary)] mb-8 text-sm">Última actualización: {new Date().toLocaleDateString()}</p>
-          
-          <div className="space-y-6 text-[var(--text-secondary)] leading-relaxed">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">1. Aceptación de los Términos</h2>
-            <p>
-              Este documento es un texto provisional. Al utilizar Menntun, usted acepta estar sujeto a estos Términos y Condiciones. Si no está de acuerdo con alguna parte, no podrá utilizar el servicio.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">2. Servicios y Módulos</h2>
-            <p>
-              [Texto Placeholder] Menntun se ofrece como Software as a Service (SaaS). El acceso a módulos específicos depende de su suscripción o la de su institución educativa.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">3. Responsabilidad del Usuario</h2>
-            <p>
-              [Texto Placeholder] El usuario es responsable de mantener la confidencialidad de su cuenta y de toda actividad que ocurra bajo la misma.
-            </p>
+  return <LegalPageLayout title="Términos y Condiciones de Uso" description="Reglas aplicables al acceso y uso de Menntun como plataforma SaaS educativa.">
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">1. Aceptación y relación contractual</h2><p>Estos términos regulan el acceso al sitio y a la plataforma <strong>{legalProfile.serviceName}</strong>, provista por <strong>{legalProfile.responsibleName}</strong>. Al contratar, activar una cuenta autorizada o utilizar la plataforma en representación de una institución, usted declara contar con facultades suficientes para obligarla. La orden de servicio, propuesta comercial, acuerdo de tratamiento de datos y políticas específicas contratadas complementan estos términos; en caso de conflicto, prevalecerá el documento que las partes hayan firmado para el servicio.</p></section>
 
-            <h2 className="text-2xl font-bold text-[var(--text-primary)]">4. Limitación de Responsabilidad</h2>
-            <p>
-              [Texto Placeholder] Menntun provee herramientas para facilitar el trabajo educativo, pero la exactitud y aplicación pedagógica recae sobre la institución.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">2. Servicio y módulos</h2><p>Menntun es una plataforma modular de gestión escolar. La disponibilidad de módulos, límites de uso, soporte, precio, vigencia y condiciones de pago serán los indicados en la propuesta u orden de servicio aceptada por la institución. La publicación de características en el sitio no constituye por sí sola una oferta vinculante ni garantiza que todos los módulos estén incluidos en cada contratación.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">3. Cuentas, roles y seguridad</h2><p>La institución administradora es responsable de designar usuarios, asignar roles y módulos, verificar que la información de su personal sea correcta y retirar accesos cuando dejen de ser necesarios. Cada persona debe proteger sus credenciales, usar contraseñas seguras y notificar de inmediato cualquier acceso no autorizado. No se permite compartir cuentas ni intentar eludir controles de autenticación, permisos o aislamiento entre escuelas.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">4. Datos de la institución y de su comunidad</h2><p>La institución conserva la responsabilidad sobre la licitud, exactitud y autorización para capturar datos de alumnos, familias, docentes y personal. En particular, deberá informar a las personas titulares y, cuando corresponda, obtener las autorizaciones de madres, padres, tutores o representantes legales. Menntun tratará esos datos únicamente para operar el servicio y conforme al contrato aplicable.</p><p className="mt-3">Las partes deberán suscribir o incorporar un acuerdo de tratamiento de datos antes de usar datos personales de producción. Consulte el <Link className="text-[var(--accent-secondary)] hover:underline" href="/privacy">Aviso de Privacidad</Link> para conocer el tratamiento general.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">5. Uso permitido</h2><p>Puede utilizar la plataforma exclusivamente para fines educativos y administrativos legítimos de su institución. Queda prohibido usarla para actividades ilícitas, discriminatorias, fraudulentas o que vulneren derechos de terceros; cargar software malicioso; realizar ingeniería inversa; extraer datos de otras escuelas; interferir con el servicio; o utilizar contenido generado por inteligencia artificial como decisión automática que sustituya la revisión humana requerida.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">6. Planeación asistida por inteligencia artificial</h2><p>Las funciones de IA generan borradores de apoyo pedagógico a partir de las instrucciones proporcionadas por el usuario. No sustituyen el juicio profesional, la revisión curricular, las decisiones de evaluación ni las obligaciones de la institución. El usuario debe revisar la exactitud, pertinencia y adecuación de cada resultado antes de compartirlo o aplicarlo.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">7. Propiedad intelectual y contenido</h2><p>Menntun y sus componentes, marcas, código, diseño y documentación son propiedad de sus titulares y se conceden bajo una licencia limitada, no exclusiva, no transferible y revocable durante la vigencia del servicio. La institución conserva sus derechos sobre los datos y contenidos que capture. Al usar la plataforma, autoriza a Menntun a alojar, procesar y mostrar esos contenidos únicamente en la medida necesaria para prestar el servicio.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">8. Disponibilidad, soporte y cambios</h2><p>Menntun procurará mantener el servicio disponible y aplicar mantenimiento razonable. Los niveles de soporte, tiempos de atención, mantenimiento programado y cualquier compromiso de disponibilidad se establecerán en la contratación aplicable. Podemos modificar o mejorar funciones cuando ello sea necesario por seguridad, cumplimiento, mantenimiento o evolución del producto, procurando no afectar materialmente el servicio contratado sin aviso razonable.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">9. Pagos, vigencia y terminación</h2><p>Los cargos, impuestos, forma de pago, renovación, cancelación y consecuencias de falta de pago serán los definidos en la propuesta, factura u orden de servicio. Al concluir la relación, las partes seguirán el procedimiento de devolución, exportación, bloqueo o eliminación de datos previsto en el contrato y en la legislación aplicable.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">10. Suspensión</h2><p>Podemos limitar o suspender temporalmente el acceso cuando exista riesgo de seguridad, incumplimiento material de estos términos, falta de pago conforme al contrato, requerimiento de autoridad competente o uso que pueda afectar a otras instituciones. Cuando sea razonablemente posible, notificaremos a la institución para que pueda corregir la situación.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">11. Responsabilidad</h2><p>Salvo que un contrato firmado establezca algo distinto o la legislación aplicable no permita limitarla, Menntun no garantiza que la plataforma esté libre de interrupciones ni que los resultados generados por usuarios o por IA sean adecuados para un propósito particular. La institución conserva la responsabilidad de sus decisiones académicas, administrativas, disciplinarias y de seguridad. Cualquier limitación de responsabilidad deberá interpretarse conforme a la legislación aplicable y no limita derechos que legalmente no puedan renunciarse.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">12. Ley aplicable y contacto</h2><p>Estos términos se interpretarán conforme a las leyes aplicables de los Estados Unidos Mexicanos. Cualquier jurisdicción o mecanismo de solución de controversias se definirá en la orden de servicio o, en su defecto, conforme a {legalProfile.jurisdiction}. Para asuntos legales escriba a <strong>{legalProfile.legalEmail}</strong>.</p></section>
+
+    <section><h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)]">13. Cambios a estos términos</h2><p>Podemos actualizar estos términos. La versión vigente se publicará en esta página con su fecha de vigencia. Cuando un cambio afecte materialmente el servicio contratado, se comunicará a la institución por un medio razonable antes de que surta efecto, salvo que la modificación sea necesaria de forma inmediata por seguridad o cumplimiento legal.</p></section>
+  </LegalPageLayout>;
 }
