@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Award, BookOpenCheck, Plus, RefreshCw, Settings2 } from "lucide-react";
+import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
@@ -11,15 +12,22 @@ import { useAuthStore } from "@/store/auth.store";
 type Category = { id: string; name: string; defaultWeight?: number | null; active: boolean };
 type Group = { id: string; name: string; grade?: { name: string }; schoolYear?: { name: string; periods?: Period[] } };
 type Period = { id: string; name: string; startDate?: string; endDate?: string };
-type Subject = { id: string; name: string; assigned?: boolean; teacher?: unknown };
+type Subject = { id: string; name: string; assigned?: boolean; teacher?: { id: string } | null };
 type Evaluation = { id: string; title: string; evaluationDate: string; maxScore: number; status: string; category: Category; subject: Subject; _count: { scores: number } };
 type Policy = { calculationMode: "WEIGHTED_CATEGORIES" | "AVERAGE"; scaleMax: number; passingScore: number; weights: { categoryId: string; weight: number }[] };
 type AssignedTeacher = { teacherProfile: { id: string; user: { firstName: string; lastName: string } } };
 
+function getErrorMessage(error: unknown, fallback: string) {
+  const message = (error as { response?: { data?: { message?: unknown } } })?.response?.data?.message;
+  return typeof message === "string" ? message : fallback;
+}
+
 export default function GradesPage() {
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === "SCHOOL_ADMIN" || user?.role === "SUPER_ADMIN";
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [evaluationsLoading, setEvaluationsLoading] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [groupId, setGroupId] = useState("");
@@ -35,41 +43,60 @@ export default function GradesPage() {
   const [error, setError] = useState<string | null>(null);
   const activeGroup = useMemo(() => groups.find((item) => item.id === groupId), [groups, groupId]);
   const periods = activeGroup?.schoolYear?.periods ?? [];
+  const hasAcademicContext = Boolean(groupId && subjectId && periodId);
+  const loading = initialLoading || contextLoading || evaluationsLoading;
 
   const loadInitial = useCallback(async () => {
-    setLoading(true); setError(null);
+    setInitialLoading(true); setError(null);
     try {
       const [groupsResponse, categoriesResponse] = await Promise.all([api.get("/academic/groups"), api.get("/grades/categories")]);
       const nextGroups = groupsResponse.data.data ?? [];
       setGroups(nextGroups); setCategories(categoriesResponse.data.data ?? []);
       if (nextGroups[0]) setGroupId(nextGroups[0].id);
-    } catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible cargar evaluaciones."); }
-    finally { setLoading(false); }
+      else setInitialLoading(false);
+    } catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible cargar evaluaciones.")); setInitialLoading(false); }
   }, []);
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
+    setContextLoading(true);
+    setSubjects([]); setSubjectId(""); setPeriodId(""); setEvaluations([]);
     try {
       const response = await api.get(`/academic/groups/${groupId}/subjects`);
-      const nextSubjects = (response.data.data ?? []).filter((item: Subject) => item.assigned || isAdmin);
+      const nextSubjects = (response.data.data ?? []).filter((item: Subject) =>
+        item.assigned && (isAdmin || item.teacher?.id === user?.teacherProfile?.id),
+      );
       setSubjects(nextSubjects);
       setSubjectId(nextSubjects[0]?.id ?? "");
       const group = groups.find((item) => item.id === groupId);
       setPeriodId(group?.schoolYear?.periods?.[0]?.id ?? "");
-    } catch { setSubjects([]); setSubjectId(""); }
-  }, [groupId, groups, isAdmin]);
+      if (!nextSubjects.length || !group?.schoolYear?.periods?.length) setInitialLoading(false);
+    } catch { setSubjects([]); setSubjectId(""); setInitialLoading(false); }
+    finally { setContextLoading(false); }
+  }, [groupId, groups, isAdmin, user?.teacherProfile?.id]);
 
   const loadEvaluations = useCallback(async () => {
-    if (!groupId) return;
+    if (!groupId || !subjectId || !periodId) return;
+    setEvaluationsLoading(true);
     try {
       const response = await api.get("/grades/evaluations", { params: { groupId, subjectId: subjectId || undefined, periodId: periodId || undefined } });
       setEvaluations(response.data.data ?? []);
-    } catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible cargar las evaluaciones."); }
+    } catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible cargar las evaluaciones.")); }
+    finally { setEvaluationsLoading(false); setInitialLoading(false); }
   }, [groupId, subjectId, periodId]);
 
-  useEffect(() => { loadInitial(); }, [loadInitial]);
-  useEffect(() => { loadGroup(); }, [loadGroup]);
-  useEffect(() => { loadEvaluations(); }, [loadEvaluations]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
+    void loadInitial();
+  }, [loadInitial]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
+    void loadGroup();
+  }, [loadGroup]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
+    void loadEvaluations();
+  }, [loadEvaluations]);
   useEffect(() => {
     if (!groupId || !subjectId || !periodId || !isAdmin) return;
     api.get("/grades/policies", { params: { groupId, subjectId, periodId } }).then((response) => {
@@ -87,7 +114,7 @@ export default function GradesPage() {
     try {
       await api.post("/grades/evaluations", { groupId, subjectId, periodId, categoryId: form.get("categoryId"), title: form.get("title"), description: form.get("description") || undefined, evaluationDate: form.get("evaluationDate"), maxScore: Number(form.get("maxScore")), status: form.get("status"), ...(isAdmin ? { teacherProfileId: form.get("teacherProfileId") } : {}) });
       setShowEvaluation(false); await loadEvaluations();
-    } catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible crear la evaluación."); }
+    } catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible crear la evaluación.")); }
     finally { setSubmitting(false); }
   }
 
@@ -95,22 +122,22 @@ export default function GradesPage() {
   async function savePolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSubmitting(true); setError(null);
     try { await api.post("/grades/policies", { groupId, subjectId, periodId, ...policy, weights: policy.calculationMode === "AVERAGE" ? [] : policy.weights.filter((item) => item.weight > 0) }); setShowPolicy(false); }
-    catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible guardar la fórmula."); }
+    catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible guardar la fórmula.")); }
     finally { setSubmitting(false); }
   }
   async function closePeriod() {
     if (!confirm("Cerrar este período bloqueará evaluaciones y ponderaciones de la materia seleccionada. ¿Continuar?")) return;
     setSubmitting(true); setError(null);
     try { await api.post("/grades/periods/close", undefined, { params: { groupId, subjectId, periodId } }); await loadEvaluations(); }
-    catch (requestError: any) { setError(requestError?.response?.data?.message ?? "No fue posible cerrar el período."); }
+    catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible cerrar el período.")); }
     finally { setSubmitting(false); }
   }
 
   return <ModuleGuard moduleKey="grades" requireSchoolContext={true}>
-    <div className="p-6 lg:p-8 space-y-6">
+    <DashboardPageShell className="space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow"><Award className="text-white" /></div><div><h1 className="gradient-text text-3xl font-extrabold">Evaluaciones</h1><p className="text-sm text-[var(--text-secondary)]">Captura evidencias y consulta el avance por período.</p></div></div>
-        <div className="flex flex-wrap gap-2"><button onClick={() => loadEvaluations()} className="glass-button"><RefreshCw size={18} />Actualizar</button>{isAdmin && <><button disabled={!groupId || !subjectId || !periodId} onClick={() => setShowPolicy(true)} className="glass-button"><Settings2 size={18} />Fórmula</button><button disabled={!groupId || !subjectId || !periodId || submitting} onClick={closePeriod} className="glass-button">Cerrar período</button></>}<button disabled={!groupId || !subjectId || !periodId || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button"><Plus size={18} />Nueva evaluación</button></div>
+        <div className="flex flex-wrap gap-2"><button disabled={!hasAcademicContext || evaluationsLoading} onClick={loadEvaluations} className="glass-button"><RefreshCw size={18} />Actualizar</button>{isAdmin && <><button disabled={!hasAcademicContext} onClick={() => setShowPolicy(true)} className="glass-button"><Settings2 size={18} />Fórmula</button><button disabled={!hasAcademicContext || submitting} onClick={closePeriod} className="glass-button">Cerrar período</button></>}<button disabled={!hasAcademicContext || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button"><Plus size={18} />Nueva evaluación</button></div>
       </header>
       {error && <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text-primary)]">{error}</div>}
       {loading ? <Loader minHeight="300px" /> : <>
@@ -123,7 +150,7 @@ export default function GradesPage() {
       </>}
       {showPolicy && <Modal title="Fórmula del período" onClose={() => setShowPolicy(false)}><form onSubmit={savePolicy} className="space-y-4"><p className="text-sm text-[var(--text-secondary)]">Se aplica sólo a {activeGroup?.name}, la materia y el período seleccionados.</p><select value={policy.calculationMode} onChange={(event) => setPolicy((current) => ({ ...current, calculationMode: event.target.value as Policy["calculationMode"] }))} className="glass-input w-full"><option value="WEIGHTED_CATEGORIES">Ponderada por categorías</option><option value="AVERAGE">Promedio simple</option></select><div className="grid grid-cols-2 gap-3"><input required value={policy.scaleMax} onChange={(event) => setPolicy((current) => ({ ...current, scaleMax: Number(event.target.value) }))} type="number" min="1" step="0.01" className="glass-input w-full" placeholder="Escala máxima" /><input required value={policy.passingScore} onChange={(event) => setPolicy((current) => ({ ...current, passingScore: Number(event.target.value) }))} type="number" min="0" step="0.01" className="glass-input w-full" placeholder="Aprobatoria" /></div>{policy.calculationMode === "WEIGHTED_CATEGORIES" && <div className="space-y-2">{categories.filter((item) => item.active).map((category) => <label key={category.id} className="flex items-center justify-between gap-3 text-sm"><span>{category.name}</span><input value={policy.weights.find((item) => item.categoryId === category.id)?.weight ?? 0} onChange={(event) => setWeight(category.id, Number(event.target.value))} type="number" min="0" max="100" step="0.01" className="glass-input w-24" /></label>)}<p className="text-xs text-[var(--text-muted)]">Total: {policy.weights.reduce((total, item) => total + item.weight, 0)}%. Debe sumar 100%.</p></div>}<button disabled={submitting} className="glass-button w-full justify-center">Guardar fórmula</button></form></Modal>}
       {showEvaluation && <Modal title="Nueva evaluación" onClose={() => setShowEvaluation(false)}><form onSubmit={createEvaluation} className="space-y-4"><input required name="title" className="glass-input w-full" placeholder="Título" /><textarea name="description" className="glass-input w-full min-h-24" placeholder="Descripción (opcional)" />{isAdmin && <select required name="teacherProfileId" className="glass-input w-full"><option value="">Selecciona docente asignado</option>{teachers.map((item) => <option key={item.teacherProfile.id} value={item.teacherProfile.id}>{item.teacherProfile.user.firstName} {item.teacherProfile.user.lastName}</option>)}</select>}<select required name="categoryId" className="glass-input w-full">{categories.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input required name="evaluationDate" type="date" min={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.startDate} max={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.endDate} className="glass-input w-full" /><input required name="maxScore" type="number" min="0.01" step="0.01" defaultValue="10" className="glass-input w-full" /><select name="status" className="glass-input w-full"><option value="DRAFT">Borrador</option><option value="PUBLISHED">Publicada</option></select><button disabled={submitting || (isAdmin && !teachers.length)} className="glass-button w-full justify-center">Crear evaluación</button></form></Modal>}
-    </div>
+    </DashboardPageShell>
   </ModuleGuard>;
 }
 

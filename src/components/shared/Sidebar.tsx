@@ -187,7 +187,7 @@ const NAV_ITEMS: SidebarItem[] = [
     moduleKey: "attendance",
   },
   {
-    name: "Grades",
+    name: "Evaluations",
     href: "/grades",
     icon: Award,
     requiredRoles: [UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN, UserRole.TEACHER],
