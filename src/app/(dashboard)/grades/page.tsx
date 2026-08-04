@@ -49,13 +49,16 @@ export default function GradesPage() {
   const loadInitial = useCallback(async () => {
     setInitialLoading(true); setError(null);
     try {
-      const [groupsResponse, categoriesResponse] = await Promise.all([api.get("/academic/groups"), api.get("/grades/categories")]);
+      const [groupsResponse, categoriesResponse] = await Promise.all([
+        api.get("/academic/groups", { params: isAdmin ? undefined : { assignedToMe: true } }),
+        api.get("/grades/categories"),
+      ]);
       const nextGroups = groupsResponse.data.data ?? [];
       setGroups(nextGroups); setCategories(categoriesResponse.data.data ?? []);
       if (nextGroups[0]) setGroupId(nextGroups[0].id);
       else setInitialLoading(false);
     } catch (requestError: unknown) { setError(getErrorMessage(requestError, "No fue posible cargar evaluaciones.")); setInitialLoading(false); }
-  }, []);
+  }, [isAdmin]);
 
   const loadGroup = useCallback(async () => {
     if (!groupId) return;
