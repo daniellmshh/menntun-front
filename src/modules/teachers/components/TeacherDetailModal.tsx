@@ -268,10 +268,10 @@ export default function TeacherDetailModal({
                             {detailTeacher.teacherProfile.groupAssignments.map((ga) => (
                               <tr key={ga.id} className="hover:bg-white/[0.01]">
                                 <td className="p-2.5 text-sm font-semibold text-[var(--text-primary)]">
-                                  {ga.group.name} - {ga.group.section}
+                                  {[ga.group.name, ga.group.section].filter(Boolean).join(" - ")}
                                 </td>
-                                <td className="p-2.5 text-xs text-[var(--text-secondary)]">{ga.group.grade.name}</td>
-                                <td className="p-2.5 text-xs text-[var(--text-muted)] font-mono">{ga.group.schoolYear.name}</td>
+                                <td className="p-2.5 text-xs text-[var(--text-secondary)]">{ga.group.grade?.name ?? "Sin grado"}</td>
+                                <td className="p-2.5 text-xs text-[var(--text-muted)] font-mono">{ga.group.schoolYear?.name ?? "Sin ciclo"}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -307,9 +307,9 @@ export default function TeacherDetailModal({
                               <tr key={sa.id} className="hover:bg-white/[0.01]">
                                 <td className="p-2.5 text-sm font-semibold text-[var(--text-primary)]">{sa.subject.name}</td>
                                 <td className="p-2.5 text-xs text-[var(--text-secondary)]">
-                                  {sa.group.name} - {sa.group.section}
+                                  {sa.group ? [sa.group.name, sa.group.section].filter(Boolean).join(" - ") : "Grupo no disponible"}
                                 </td>
-                                <td className="p-2.5 text-xs text-[var(--text-muted)]">{sa.group.grade.name}</td>
+                                <td className="p-2.5 text-xs text-[var(--text-muted)]">{sa.group?.grade?.name ?? "Sin grado"}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -326,4 +326,3 @@ export default function TeacherDetailModal({
     document.body
   );
 }
-

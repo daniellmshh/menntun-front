@@ -16,8 +16,8 @@ export interface Teacher {
     specialty?: string;
     hireDate?: string;
     allowedModules?: string[];
-    groupAssignments?: Array<{ id: string; group: { id: string; name: string; section: string; grade: { name: string }; schoolYear: { name: string } } }>;
-    subjectAssignments?: Array<{ id: string; subject: { name: string }; group: { id: string; name: string; section: string; grade: { name: string } } }>;
+    groupAssignments?: Array<{ id: string; group: { id: string; name: string; section?: string | null; grade?: { name: string } | null; schoolYear?: { name: string } | null } }>;
+    subjectAssignments?: Array<{ id: string; subject: { name: string }; group?: { id: string; name: string; section?: string | null; grade?: { name: string } | null; schoolYear?: { name: string } | null } | null }>;
   };
 }
 
