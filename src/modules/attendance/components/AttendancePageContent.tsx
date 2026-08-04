@@ -4,11 +4,12 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import Link from "next/link";
 import { CalendarCheck2, CheckCircle2, GraduationCap, QrCode, RefreshCw, ScanLine, Settings2, Users } from "lucide-react";
+import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import Loader from "@/components/shared/Loader";
 import api from "@/lib/api/axios";
 import { useAuthStore } from "@/store/auth.store";
 import { UserRole } from "@/types";
-import type { AttendanceEventType, ClassStatus, Credential, Group, PickupContact, ResolvedStudent, Student, Subject } from "../types";
+import type { AttendanceEventType, ClassGroup, ClassGroupContext, ClassStatus, Credential, Group, PickupContact, ResolvedStudent, Student, Subject } from "../types";
 import QrCameraScanner from "./QrCameraScanner";
 
 type LiveState = { id: string; state: string; studentProfile: { user: { firstName: string; lastName: string }; }; group: { name: string; grade?: { name: string } } };
@@ -32,13 +33,18 @@ export default function AttendancePageContent() {
   const [idVerified, setIdVerified] = useState(false);
   const [reason, setReason] = useState("");
   const [live, setLive] = useState<LiveState[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<ClassGroup[]>([]);
   const [groupId, setGroupId] = useState("");
+  const [credentialGroups, setCredentialGroups] = useState<Group[]>([]);
+  const [credentialGroupId, setCredentialGroupId] = useState("");
+  const [credentialStudents, setCredentialStudents] = useState<Student[]>([]);
+  const [loadingCredentials, setLoadingCredentials] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectId, setSubjectId] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [statuses, setStatuses] = useState<Record<string, ClassStatus>>({});
   const [sessionId, setSessionId] = useState("");
+  const [loadingRoster, setLoadingRoster] = useState(false);
   const [credential, setCredential] = useState<Credential | null>(null);
   const [qrImage, setQrImage] = useState("");
   const [pickupStudent, setPickupStudent] = useState<Student | null>(null);
@@ -65,12 +71,21 @@ export default function AttendancePageContent() {
   const loadAcademic = useCallback(async () => {
     if (!canTeach) return;
     try {
-      const response = await api.get("/academic/groups");
+      const [response, credentialGroupsResponse] = await Promise.all([
+        api.get("/attendance/class-context"),
+        isAdmin ? api.get("/academic/groups") : Promise.resolve(null),
+      ]);
       const nextGroups = response.data.data ?? [];
       setGroups(nextGroups);
       setGroupId((current) => current || nextGroups[0]?.id || "");
-    } catch { /* Portería remains available when academic is disabled. */ }
-  }, [canTeach]);
+      setLoadingRoster(nextGroups.length > 0);
+      if (credentialGroupsResponse) {
+        const nextCredentialGroups = credentialGroupsResponse.data.data ?? [];
+        setCredentialGroups(nextCredentialGroups);
+        setCredentialGroupId((current) => current || nextCredentialGroups[0]?.id || "");
+      }
+    } catch (requestError) { showRequestError(requestError, "No fue posible cargar los grupos para el pase de lista."); }
+  }, [canTeach, isAdmin]);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError(null);
@@ -79,7 +94,10 @@ export default function AttendancePageContent() {
     finally { setLoading(false); }
   }, [canGate, loadAcademic, loadGate]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => { void refresh(); }, 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [refresh]);
   useEffect(() => {
     if (!canGate) return;
     const interval = window.setInterval(() => { loadGate().catch(() => undefined); }, 30000);
@@ -87,16 +105,34 @@ export default function AttendancePageContent() {
   }, [canGate, loadGate]);
   useEffect(() => {
     if (!groupId || !canTeach) return;
-    api.get(`/academic/groups/${groupId}/subjects`).then((response) => {
-      const next = (response.data.data ?? []).filter((subject: Subject) => subject.assigned || isAdmin);
-      setSubjects(next); setSubjectId((current) => next.some((subject: Subject) => subject.id === current) ? current : next[0]?.id || "");
-    }).catch(() => { setSubjects([]); setSubjectId(""); });
-    api.get(`/academic/groups/${groupId}/students`).then((response) => {
-      const next = response.data.data?.assigned ?? [];
-      setStudents(next); setStatuses(Object.fromEntries(next.map((student: Student) => [student.studentProfileId, "PRESENT"])));
+    let active = true;
+    void api.get(`/attendance/class-context/${groupId}`).then((response) => {
+      if (!active) return;
+      const context = response.data.data as ClassGroupContext;
+      const nextStudents = context.students ?? [];
+      const nextSubjects = context.subjects ?? [];
+      setSubjects(nextSubjects);
+      setSubjectId((current) => nextSubjects.some((subject) => subject.id === current) ? current : nextSubjects[0]?.id || "");
+      setStudents(nextStudents);
+      setStatuses(Object.fromEntries(nextStudents.map((student) => [student.studentProfileId, "PRESENT"] as const)));
       setSessionId("");
-    }).catch(() => { setStudents([]); });
-  }, [canTeach, groupId, isAdmin]);
+    }).catch((requestError) => {
+      if (!active) return;
+      setSubjects([]); setSubjectId(""); setStudents([]); setSessionId("");
+      showRequestError(requestError, "No fue posible cargar los alumnos del grupo.");
+    }).finally(() => { if (active) setLoadingRoster(false); });
+    return () => { active = false; };
+  }, [canTeach, groupId]);
+  useEffect(() => {
+    if (!isAdmin || tab !== "credentials" || !credentialGroupId) return;
+    let active = true;
+    void api.get(`/academic/groups/${credentialGroupId}/students`).then((response) => {
+      if (active) setCredentialStudents(response.data.data?.assigned ?? []);
+    }).catch((requestError) => {
+      if (active) showRequestError(requestError, "No fue posible cargar los alumnos para las credenciales.");
+    }).finally(() => { if (active) setLoadingCredentials(false); });
+    return () => { active = false; };
+  }, [credentialGroupId, isAdmin, tab]);
 
   async function resolveQr(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(null); setNotice(null);
@@ -122,9 +158,9 @@ export default function AttendancePageContent() {
   }
 
   async function createSession() {
-    if (!groupId || !subjectId) return;
+    if (!groupId || (activeGroup?.sessionMode === "SUBJECT" && !subjectId)) return;
     setBusy(true); setError(null);
-    try { const response = await api.post("/attendance/class-sessions", { groupId, subjectId, blockLabel: "general" }); setSessionId(response.data.data.id); setNotice("Sesión de clase lista para capturar asistencia."); }
+    try { const response = await api.post("/attendance/class-sessions", { groupId, subjectId: activeGroup?.sessionMode === "SUBJECT" ? subjectId : undefined, blockLabel: "general" }); setSessionId(response.data.data.id); setNotice("Pase de lista preparado para capturar asistencia."); }
     catch (requestError) { showRequestError(requestError, "No fue posible crear la sesión."); }
     finally { setBusy(false); }
   }
@@ -190,22 +226,26 @@ export default function AttendancePageContent() {
 
   if (loading) return <Loader minHeight="380px" />;
 
-  return <div className="p-6 lg:p-8 space-y-6">
+  const requiresSubject = activeGroup?.sessionMode === "SUBJECT";
+  const showSubjectSelector = requiresSubject && subjects.length > 1;
+  const selectedSubject = subjects.find((subject) => subject.id === subjectId);
+
+  return <DashboardPageShell>
     <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"><div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow"><CalendarCheck2 className="text-white" /></div><div><h1 className="gradient-text text-3xl font-extrabold">Asistencias</h1><p className="text-sm text-[var(--text-secondary)]">Portería, sesiones de clase y cierre diario con trazabilidad.</p></div></div><div className="flex gap-2"><Link href="/attendance/reports" className="glass-button-secondary">Reporte diario</Link><button onClick={refresh} disabled={busy} className="glass-button"><RefreshCw size={17} />Actualizar</button></div></header>
     {error && <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 p-3 text-sm">{error}</div>}
     {notice && <div className="rounded-xl border border-[var(--success)]/40 bg-[var(--success)]/10 p-3 text-sm">{notice}</div>}
-    <nav className="flex flex-wrap gap-2">{([...(canGate ? [{ id: "gate", label: "Portería", icon: ScanLine }] : []), ...(canTeach ? [{ id: "class", label: "Clase", icon: GraduationCap }] : []), ...(isAdmin ? [{ id: "credentials", label: "Credenciales QR", icon: QrCode }, { id: "settings", label: "Configuración", icon: Settings2 }] : [])] as { id: Tab; label: string; icon: typeof ScanLine }[]).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => setTab(id)} className={tab === id ? "glass-button" : "glass-button-secondary"}><Icon size={17} />{label}</button>)}</nav>
+    <nav className="flex flex-wrap gap-2">{([...(canGate ? [{ id: "gate", label: "Portería", icon: ScanLine }] : []), ...(canTeach ? [{ id: "class", label: "Clase", icon: GraduationCap }] : []), ...(isAdmin ? [{ id: "credentials", label: "Credenciales QR", icon: QrCode }, { id: "settings", label: "Configuración", icon: Settings2 }] : [])] as { id: Tab; label: string; icon: typeof ScanLine }[]).map(({ id, label, icon: Icon }) => <button key={id} onClick={() => { setTab(id); if (id === "credentials") setLoadingCredentials(true); }} className={tab === id ? "glass-button" : "glass-button-secondary"}><Icon size={17} />{label}</button>)}</nav>
 
     {tab === "gate" && <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]"><div className="glass-panel rounded-2xl p-6 space-y-5"><div><h2 className="font-bold text-xl">Escanear acceso</h2><p className="text-sm text-[var(--text-secondary)]">Usa cámara, lector físico o pega el QR.</p></div><QrCameraScanner onDetected={handleCameraScan} /><form onSubmit={resolveQr} className="flex flex-col gap-3 sm:flex-row"><input autoFocus required value={qrPayload} onChange={(event) => setQrPayload(event.target.value)} className="glass-input flex-1" placeholder="Escanea o pega el QR del alumno" /><button disabled={busy} className="glass-button justify-center"><ScanLine size={18} />Validar</button></form>{resolved && <div className="rounded-xl border border-[var(--border-glass)] p-4 space-y-4"><div className="flex items-center gap-3"><CheckCircle2 className="text-[var(--success)]" /><div><p className="font-bold">{resolved.student.firstName} {resolved.student.lastName}</p><p className="text-sm text-[var(--text-secondary)]">{resolved.student.group.grade?.name ? `${resolved.student.group.grade.name} · ` : ""}{resolved.student.group.name}</p></div></div><select value={eventType} onChange={(event) => setEventType(event.target.value as AttendanceEventType)} className="glass-input w-full"><option value="CHECK_IN">Entrada</option><option value="CHECK_OUT">Salida regular</option><option value="EARLY_RELEASE">Salida anticipada</option><option value="RE_ENTRY">Reingreso</option></select>{isDeparture && <><select required value={pickupContactId} onChange={(event) => selectPickupContact(event.target.value)} className="glass-input w-full"><option value="">Selecciona a la persona autorizada</option>{resolved.contacts.map((contact) => <option key={contact.id} value={contact.id}>{contact.name} · {contact.relationship}</option>)}</select>{pickupPhotoUrl && <img src={pickupPhotoUrl} alt="Foto de la persona autorizada" className="h-24 w-24 rounded-xl object-cover" />}{eventType === "EARLY_RELEASE" && <input required value={reason} onChange={(event) => setReason(event.target.value)} className="glass-input w-full" placeholder="Motivo de salida anticipada" />}<label className="flex items-center gap-3 rounded-lg border border-[var(--warning)]/30 p-3 text-sm"><input checked={idVerified} onChange={(event) => setIdVerified(event.target.checked)} type="checkbox" />Verifiqué visualmente la identificación de la persona.</label></>}<button type="button" disabled={busy} onClick={registerEvent} className="glass-button w-full justify-center">Registrar {eventType.replace(/_/g, " ")}</button></div>}</div><LivePanel live={live} /></section>}
 
-    {tab === "class" && <section className="space-y-5"><div className="glass-panel rounded-2xl p-5 grid gap-3 md:grid-cols-3"><select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="glass-input"><option value="">Selecciona grupo</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.grade?.name ? `${group.grade.name} · ` : ""}{group.name}</option>)}</select><select value={subjectId} onChange={(event) => setSubjectId(event.target.value)} className="glass-input"><option value="">Selecciona materia</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select><button disabled={!groupId || !subjectId || busy} onClick={createSession} className="glass-button justify-center">{sessionId ? "Sesión activa" : "Iniciar sesión"}</button></div>{activeGroup && <div className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)] flex items-center justify-between"><div><h2 className="font-bold">{activeGroup.name}</h2><p className="text-sm text-[var(--text-secondary)]">Cada docente registra su propia sesión y materia.</p></div><button disabled={!sessionId || busy} onClick={saveClassAttendance} className="glass-button">Guardar asistencia</button></div><div className="divide-y divide-[var(--border-glass)]">{students.map((student) => <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" key={student.studentProfileId}><div><p className="font-medium">{student.firstName} {student.lastName}</p><p className="text-xs text-[var(--text-secondary)]">{student.enrollmentNumber ?? "Sin matrícula"}</p></div><select disabled={!sessionId} value={statuses[student.studentProfileId] ?? "PRESENT"} onChange={(event) => setStatuses((current) => ({ ...current, [student.studentProfileId]: event.target.value as ClassStatus }))} className="glass-input sm:w-44">{classStatuses.map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></div>)}{!students.length && <p className="p-10 text-center text-[var(--text-secondary)]">Selecciona un grupo con alumnos inscritos.</p>}</div></div>}</section>}
+    {tab === "class" && <section className="space-y-5"><div className={`glass-panel rounded-2xl p-5 grid gap-3 ${showSubjectSelector ? "md:grid-cols-3" : "md:grid-cols-2"}`}><select value={groupId} onChange={(event) => { setLoadingRoster(true); setGroupId(event.target.value); }} className="glass-input"><option value="">Selecciona grupo</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.grade?.name ? `${group.grade.name} · ` : ""}{group.name}</option>)}</select>{showSubjectSelector && <select value={subjectId} onChange={(event) => setSubjectId(event.target.value)} className="glass-input"><option value="">Selecciona materia</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select>}{requiresSubject && !showSubjectSelector && selectedSubject && <div className="glass-input flex items-center" aria-label="Materia asignada">{selectedSubject.name}</div>}<button disabled={!groupId || (requiresSubject && !subjectId) || busy || loadingRoster} onClick={createSession} className="glass-button justify-center">{sessionId ? "Pase de lista listo" : "Preparar pase de lista"}</button></div>{activeGroup && <div className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)] flex items-center justify-between"><div><h2 className="font-bold">{activeGroup.name}</h2><p className="text-sm text-[var(--text-secondary)]">{requiresSubject ? `Asistencia para ${selectedSubject?.name ?? "la materia asignada"}.` : "Pase de lista general para todo el grupo."}</p></div><button disabled={!sessionId || busy || loadingRoster} onClick={saveClassAttendance} className="glass-button">Guardar asistencia</button></div>{loadingRoster ? <Loader minHeight="260px" /> : <div className="divide-y divide-[var(--border-glass)]">{students.map((student) => <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" key={student.studentProfileId}><div><p className="font-medium">{student.firstName} {student.lastName}</p><p className="text-xs text-[var(--text-secondary)]">{student.enrollmentNumber ?? "Sin matrícula"}</p></div><select disabled={!sessionId} value={statuses[student.studentProfileId] ?? "PRESENT"} onChange={(event) => setStatuses((current) => ({ ...current, [student.studentProfileId]: event.target.value as ClassStatus }))} className="glass-input sm:w-44">{classStatuses.map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></div>)}{!students.length && <p className="p-10 text-center text-[var(--text-secondary)]">Este grupo no tiene alumnos inscritos.</p>}</div>}</div>}</section>}
 
-    {tab === "credentials" && <section className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)]"><h2 className="font-bold">Credenciales QR de alumnos</h2><p className="text-sm text-[var(--text-secondary)]">Al emitir una nueva credencial se revoca la anterior automáticamente.</p></div><div className="p-4 grid gap-3 md:grid-cols-2"><select value={groupId} onChange={(event) => setGroupId(event.target.value)} className="glass-input"><option value="">Selecciona grupo</option>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><p className="text-sm self-center text-[var(--text-secondary)]">Genera el QR y administra las personas autorizadas para entrega.</p></div><div className="divide-y divide-[var(--border-glass)]">{students.map((student) => <div key={student.studentProfileId} className="p-4 flex flex-wrap items-center justify-between gap-3"><span className="font-medium">{student.firstName} {student.lastName}</span><div className="flex gap-2"><button disabled={busy} onClick={() => openPickupContacts(student)} className="glass-button-secondary">Personas</button><button disabled={busy} onClick={() => issueCredential(student.studentProfileId)} className="glass-button"><QrCode size={17} />Emitir QR</button></div></div>)}</div></section>}
+    {tab === "credentials" && <section className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)]"><h2 className="font-bold">Credenciales QR de alumnos</h2><p className="text-sm text-[var(--text-secondary)]">Al emitir una nueva credencial se revoca la anterior automáticamente.</p></div><div className="p-4 grid gap-3 md:grid-cols-2"><select value={credentialGroupId} onChange={(event) => { setLoadingCredentials(true); setCredentialGroupId(event.target.value); }} className="glass-input"><option value="">Selecciona grupo</option>{credentialGroups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</select><p className="text-sm self-center text-[var(--text-secondary)]">Genera el QR y administra las personas autorizadas para entrega.</p></div>{loadingCredentials ? <Loader minHeight="220px" /> : <div className="divide-y divide-[var(--border-glass)]">{credentialStudents.map((student) => <div key={student.studentProfileId} className="p-4 flex flex-wrap items-center justify-between gap-3"><span className="font-medium">{student.firstName} {student.lastName}</span><div className="flex gap-2"><button disabled={busy} onClick={() => openPickupContacts(student)} className="glass-button-secondary">Personas</button><button disabled={busy} onClick={() => issueCredential(student.studentProfileId)} className="glass-button"><QrCode size={17} />Emitir QR</button></div></div>)}</div>}</section>}
 
     {tab === "settings" && <section className="glass-panel max-w-2xl rounded-2xl p-6"><h2 className="font-bold text-xl mb-1">Reglas operativas</h2><p className="text-sm text-[var(--text-secondary)] mb-5">El cierre automático marca como ausentes sólo a quienes no tienen evidencia de portería ni de clase. Reabrir un día requiere motivo desde la API administrativa.</p><form onSubmit={saveSettings} className="grid gap-4 md:grid-cols-2"><label className="space-y-1"><span className="text-sm">Zona horaria</span><input value={settings.timezone} onChange={(event) => setSettings((current) => ({ ...current, timezone: event.target.value }))} className="glass-input w-full" /></label><label className="space-y-1"><span className="text-sm">Inicio de jornada</span><input type="time" value={settings.startTime} onChange={(event) => setSettings((current) => ({ ...current, startTime: event.target.value }))} className="glass-input w-full" /></label><label className="space-y-1"><span className="text-sm">Tolerancia de retardo (minutos)</span><input type="number" min="0" max="180" value={settings.lateToleranceMins} onChange={(event) => setSettings((current) => ({ ...current, lateToleranceMins: Number(event.target.value) }))} className="glass-input w-full" /></label><label className="space-y-1"><span className="text-sm">Cierre diario automático</span><input type="time" value={settings.dailyCloseTime} onChange={(event) => setSettings((current) => ({ ...current, dailyCloseTime: event.target.value }))} className="glass-input w-full" /></label><label className="space-y-2 md:col-span-2"><span className="text-sm">Días lectivos</span><span className="flex flex-wrap gap-2">{["D", "L", "M", "M", "J", "V", "S"].map((day, dayIndex) => <button type="button" onClick={() => setSettings((current) => ({ ...current, activeWeekdays: current.activeWeekdays.includes(dayIndex) ? current.activeWeekdays.filter((item) => item !== dayIndex) : [...current.activeWeekdays, dayIndex] }))} className={settings.activeWeekdays.includes(dayIndex) ? "glass-button !px-3 !py-2" : "glass-button-secondary !px-3 !py-2"} key={`${day}-${dayIndex}`}>{day}</button>)}</span></label><button disabled={busy} className="glass-button justify-center md:col-span-2">Guardar reglas</button></form></section>}
     {credential && <QrModal credential={credential} image={qrImage} onClose={() => setCredential(null)} />}
     {pickupStudent && <PickupContactsModal student={pickupStudent} contacts={pickupContacts} busy={busy} onClose={() => setPickupStudent(null)} onSubmit={createPickupContact} onDeactivate={deactivatePickupContact} />}
-  </div>;
+  </DashboardPageShell>;
 }
 
 function LivePanel({ live }: { live: LiveState[] }) { return <aside className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)] flex items-center gap-2"><Users className="text-[var(--accent-secondary)]" size={19} /><div><h2 className="font-bold">Dentro del plantel</h2><p className="text-xs text-[var(--text-secondary)]">Actualización automática cada 30 segundos.</p></div></div><div className="max-h-[460px] overflow-y-auto divide-y divide-[var(--border-glass)]">{live.filter((item) => item.state === "INSIDE").map((item) => <div className="p-4" key={item.id}><p className="font-medium">{item.studentProfile.user.firstName} {item.studentProfile.user.lastName}</p><p className="text-xs text-[var(--text-secondary)]">{item.group.grade?.name ? `${item.group.grade.name} · ` : ""}{item.group.name}</p></div>)}{!live.some((item) => item.state === "INSIDE") && <p className="p-10 text-center text-sm text-[var(--text-secondary)]">Aún no hay alumnos dentro.</p>}</div></aside>; }
