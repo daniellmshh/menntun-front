@@ -15,6 +15,7 @@ import {
   Briefcase,
   Link as LinkIcon,
 } from "lucide-react";
+import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import { useAuthStore } from "@/store/auth.store";
 import { useLanguageStore } from "@/store/language.store";
 import { translations } from "@/lib/translations";
@@ -241,9 +242,7 @@ export default function ParentsPage() {
 
   return (
     <ModuleGuard moduleKey="parents">
-      <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
-        <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-6">
+      <DashboardPageShell>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
@@ -431,9 +430,7 @@ export default function ParentsPage() {
                 </table>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+      </DashboardPageShell>
 
       {/* CREATE/EDIT MODAL */}
       {isFormModalOpen && (

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { FileText, Plus, Search, UserPlus, Filter, ShieldCheck, Users } from "lucide-react";
+import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
@@ -80,9 +81,7 @@ export default function EnrollmentsPage() {
 
   return (
     <ModuleGuard moduleKey="enrollments" requireSchoolContext={true}>
-      <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
-        <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-6">
+      <DashboardPageShell>
             
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -295,10 +294,9 @@ export default function EnrollmentsPage() {
                 </table>
               </div>
             </div>
-          </div>
-        </div>
+      </DashboardPageShell>
 
-        {isCreateModalOpen && (
+      {isCreateModalOpen && (
           <CreateSolicitudWizard
             onClose={() => setIsCreateModalOpen(false)}
             onSuccess={() => {
@@ -308,7 +306,7 @@ export default function EnrollmentsPage() {
           />
         )}
 
-        {isDetailModalOpen && selectedSolicitud && (
+      {isDetailModalOpen && selectedSolicitud && (
           <SolicitudDetailModal
             key={`${selectedSolicitud.id}-${detailInitialTab}`}
             solicitud={selectedSolicitud}
@@ -321,7 +319,6 @@ export default function EnrollmentsPage() {
             onDocumentsChanged={fetchSolicitudes}
           />
         )}
-      </div>
     </ModuleGuard>
   );
 }

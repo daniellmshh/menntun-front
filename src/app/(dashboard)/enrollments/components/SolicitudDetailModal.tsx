@@ -158,7 +158,7 @@ export default function SolicitudDetailModal({
     { id: "TUTORES", label: "Tutores", icon: <Users size={16} /> },
     { id: "DOCUMENTOS", label: "Documentos", icon: <FileText size={16} /> },
     { id: "CARGOS", label: "Cargos", icon: <DollarSign size={16} /> },
-  ];
+  ] as const;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

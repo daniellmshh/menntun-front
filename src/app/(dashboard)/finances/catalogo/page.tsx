@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { FolderOpen, Plus, Search, Edit2, Trash2, X, Loader2 } from "lucide-react";
+import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
 import api from "@/lib/api/axios";
@@ -103,9 +104,7 @@ export default function CatalogoFinanzasPage() {
 
   return (
     <ModuleGuard moduleKey="finances" requireSchoolContext={true}>
-      <div className="flex flex-col h-[calc(100vh-theme(spacing.16))] bg-[var(--bg-base)] relative">
-        <div className="flex-1 p-8 pb-10 overflow-y-auto custom-scrollbar">
-          <div className="max-w-7xl mx-auto space-y-6">
+      <DashboardPageShell>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow shrink-0">
@@ -236,9 +235,7 @@ export default function CatalogoFinanzasPage() {
                 </table>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
+      </DashboardPageShell>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
