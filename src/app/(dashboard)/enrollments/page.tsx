@@ -174,28 +174,28 @@ export default function EnrollmentsPage() {
                     value={filterEstado}
                     onChange={(e) => setFilterEstado(e.target.value)}
                   >
-                    <option value="TODOS" className="bg-[var(--bg-base)]">Estado: Todos</option>
-                    <option value="PENDIENTE" className="bg-[var(--bg-base)]">Pendientes</option>
-                    <option value="APROBADA" className="bg-[var(--bg-base)]">Aprobadas</option>
-                    <option value="RECHAZADA" className="bg-[var(--bg-base)]">Rechazadas</option>
+                    <option value="TODOS" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Estado: Todos</option>
+                    <option value="PENDIENTE" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Pendientes</option>
+                    <option value="APROBADA" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Aprobadas</option>
+                    <option value="RECHAZADA" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Rechazadas</option>
                   </select>
                   <select
                     className="glass-input text-sm py-1.5"
                     value={filterExpediente}
                     onChange={(e) => setFilterExpediente(e.target.value)}
                   >
-                    <option value="TODOS" className="bg-[var(--bg-base)]">Papelería: Todas</option>
-                    <option value="INCOMPLETO" className="bg-[var(--bg-base)]">Expediente incompleto</option>
-                    <option value="COMPLETO" className="bg-[var(--bg-base)]">Expediente completo</option>
+                    <option value="TODOS" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Papelería: Todas</option>
+                    <option value="INCOMPLETO" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Expediente incompleto</option>
+                    <option value="COMPLETO" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Expediente completo</option>
                   </select>
                   <select
                     className="glass-input text-sm py-1.5"
                     value={filterTipo}
                     onChange={(e) => setFilterTipo(e.target.value)}
                   >
-                    <option value="TODOS" className="bg-[var(--bg-base)]">Tipo: Todos</option>
-                    <option value="NUEVO_INGRESO" className="bg-[var(--bg-base)]">Nuevo Ingreso</option>
-                    <option value="REINSCRIPCION" className="bg-[var(--bg-base)]">Reinscripción</option>
+                    <option value="TODOS" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Tipo: Todos</option>
+                    <option value="NUEVO_INGRESO" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Nuevo Ingreso</option>
+                    <option value="REINSCRIPCION" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Reinscripción</option>
                   </select>
                 </div>
               </div>

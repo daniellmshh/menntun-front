@@ -146,11 +146,11 @@ export default function CreateSolicitudWizard({
             (lbl, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                     step > i + 1
-                      ? "bg-[var(--accent-primary)] text-white"
+                      ? "bg-[var(--accent-primary)] text-white shadow-glow"
                       : step === i + 1
-                        ? "border-2 border-[var(--accent-primary)] text-[var(--accent-primary)] bg-transparent"
+                        ? "border-2 border-[var(--accent-primary)] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10"
                         : "border-2 border-[var(--border-glass)] text-[var(--text-muted)]"
                   }`}
                 >
@@ -169,28 +169,33 @@ export default function CreateSolicitudWizard({
         <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
           {step === 1 && (
             <div className="space-y-4 animate-fade-in">
-              <h3 className="text-lg font-bold">Tipo de Solicitud</h3>
-              <select
-                className="glass-input w-full"
-                value={formData.tipoSolicitud}
-                onChange={(e) =>
-                  setFormData({ ...formData, tipoSolicitud: e.target.value })
-                }
-              >
-                <option value="INSCRIPCION" className="bg-[var(--bg-base)]">
-                  Nuevo Ingreso
-                </option>
-                <option value="REINSCRIPCION" className="bg-[var(--bg-base)]">
-                  Reinscripción
-                </option>
-              </select>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Tipo de Solicitud</h3>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                  Selecciona la modalidad de ingreso
+                </label>
+                <select
+                  className="glass-input w-full"
+                  value={formData.tipoSolicitud}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tipoSolicitud: e.target.value })
+                  }
+                >
+                  <option value="INSCRIPCION" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                    Nuevo Ingreso
+                  </option>
+                  <option value="REINSCRIPCION" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                    Reinscripción
+                  </option>
+                </select>
+              </div>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold">Datos del Alumno</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Datos del Alumno</h3>
                 <button
                   onClick={() => {
                     const firstStudent = formData.alumnos[0];
@@ -228,7 +233,7 @@ export default function CreateSolicitudWizard({
                         newAlumnos.splice(index, 1);
                         setFormData({ ...formData, alumnos: newAlumnos });
                       }}
-                      className="absolute top-2 right-2 p-1 text-[var(--text-muted)] hover:text-red-400"
+                      className="absolute top-3 right-3 p-1 text-[var(--text-muted)] hover:text-[hsl(354,85%,60%)] transition-colors"
                       title="Eliminar Alumno"
                     >
                       <X size={16} />
@@ -237,13 +242,14 @@ export default function CreateSolicitudWizard({
                   <h4 className="text-sm font-semibold text-[var(--accent-primary)]">
                     Alumno {index + 1}
                   </h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Primer Nombre
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. Juan"
                         value={alumno.primerNombre}
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
@@ -253,11 +259,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Segundo Nombre (Opcional)
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. Carlos"
                         value={alumno.segundoNombre}
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
@@ -267,11 +274,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Primer Apellido
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. Pérez"
                         value={alumno.primerApellido}
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
@@ -281,11 +289,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Segundo Apellido
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. López"
                         value={alumno.segundoApellido}
                         onChange={(e) => {
                           const newAlumnos = [...formData.alumnos];
@@ -295,7 +304,7 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Grado
                       </label>
                       <select
@@ -309,14 +318,14 @@ export default function CreateSolicitudWizard({
                           setFormData({ ...formData, alumnos: newAlumnos });
                         }}
                       >
-                        <option value="" className="bg-[var(--bg-base)]">
+                        <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
                           Selecciona un grado...
                         </option>
                         {grades.map((g) => (
                           <option
                             key={g.id}
                             value={g.id}
-                            className="bg-[var(--bg-base)]"
+                            className="bg-[var(--bg-surface)] text-[var(--text-primary)]"
                           >
                             {g.name}
                           </option>
@@ -324,7 +333,7 @@ export default function CreateSolicitudWizard({
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Grupo
                       </label>
                       <select
@@ -338,7 +347,7 @@ export default function CreateSolicitudWizard({
                         }}
                         disabled={!alumno.gradeId}
                       >
-                        <option value="" className="bg-[var(--bg-base)]">
+                        <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
                           Selecciona un grupo...
                         </option>
                         {groups
@@ -358,7 +367,7 @@ export default function CreateSolicitudWizard({
                               <option
                                 key={g.id}
                                 value={g.id}
-                                className="bg-[var(--bg-base)]"
+                                className="bg-[var(--bg-surface)] text-[var(--text-primary)]"
                               >
                                 {g.name} ({capText})
                               </option>
@@ -375,7 +384,7 @@ export default function CreateSolicitudWizard({
           {step === 3 && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-bold">Datos de los Tutores</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">Datos de los Tutores</h3>
                 {formData.padres.length < 4 && (
                   <button
                     onClick={() => {
@@ -417,7 +426,7 @@ export default function CreateSolicitudWizard({
                         }
                         setFormData({ ...formData, padres: newPadres });
                       }}
-                      className="absolute top-2 right-2 p-1 text-[var(--text-muted)] hover:text-red-400"
+                      className="absolute top-3 right-3 p-1 text-[var(--text-muted)] hover:text-[hsl(354,85%,60%)] transition-colors"
                       title="Eliminar Tutor"
                     >
                       <X size={16} />
@@ -428,7 +437,7 @@ export default function CreateSolicitudWizard({
                     <h4 className="text-sm font-semibold text-[var(--accent-secondary)]">
                       Tutor {index + 1}
                     </h4>
-                    <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] cursor-pointer">
+                    <label className="flex items-center gap-1.5 text-xs text-[var(--text-primary)] cursor-pointer font-medium">
                       <input
                         type="radio"
                         name="primaryTutor"
@@ -446,13 +455,14 @@ export default function CreateSolicitudWizard({
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Primer Nombre
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. María"
                         value={padre.primerNombre}
                         onChange={(e) => {
                           const newPadres = [...formData.padres];
@@ -462,11 +472,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Segundo Nombre (Opcional)
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. Elena"
                         value={padre.segundoNombre}
                         onChange={(e) => {
                           const newPadres = [...formData.padres];
@@ -476,11 +487,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Primer Apellido
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. García"
                         value={padre.primerApellido}
                         onChange={(e) => {
                           const newPadres = [...formData.padres];
@@ -490,11 +502,12 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Segundo Apellido
                       </label>
                       <input
                         className="glass-input w-full"
+                        placeholder="Ej. López"
                         value={padre.segundoApellido}
                         onChange={(e) => {
                           const newPadres = [...formData.padres];
@@ -504,12 +517,13 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Email
                       </label>
                       <input
                         className="glass-input w-full"
                         type="email"
+                        placeholder="ejemplo@correo.com"
                         value={padre.email}
                         onChange={(e) => {
                           const newPadres = [...formData.padres];
@@ -519,7 +533,7 @@ export default function CreateSolicitudWizard({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[var(--text-secondary)] mb-1">
+                      <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                         Parentesco
                       </label>
                       <select
@@ -531,13 +545,13 @@ export default function CreateSolicitudWizard({
                           setFormData({ ...formData, padres: newPadres });
                         }}
                       >
-                        <option value="Padre" className="bg-[var(--bg-base)]">
+                        <option value="Padre" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
                           Padre
                         </option>
-                        <option value="Madre" className="bg-[var(--bg-base)]">
+                        <option value="Madre" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
                           Madre
                         </option>
-                        <option value="Tutor" className="bg-[var(--bg-base)]">
+                        <option value="Tutor" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
                           Tutor Legal
                         </option>
                       </select>
@@ -550,7 +564,7 @@ export default function CreateSolicitudWizard({
 
           {step === 4 && (
             <div className="space-y-6 animate-fade-in">
-              <h3 className="text-lg font-bold">Subir Documentos (Opcional)</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Subir Documentos (Opcional)</h3>
               {docTypes.length === 0 ? (
                 <p className="text-sm text-[var(--text-secondary)]">
                   No hay tipos de documentos configurados.
@@ -571,17 +585,17 @@ export default function CreateSolicitudWizard({
                           alumno.segundoApellido,
                         ]
                           .filter(Boolean)
-                          .join(" ")}
+                          .join(" ") || `Alumno ${index + 1}`}
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {docTypes.map((docType) => (
-                          <div key={docType.id} className="space-y-1">
-                            <label className="block text-xs text-[var(--text-secondary)]">
+                          <div key={docType.id} className="space-y-1.5">
+                            <label className="block text-xs font-semibold text-[var(--text-secondary)]">
                               {docType.nombre}
                             </label>
                             <input
                               type="file"
-                              className="block w-full text-sm text-[var(--text-secondary)] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[var(--accent-primary)] file:text-white hover:file:bg-[var(--accent-secondary)]"
+                              className="block w-full text-xs text-[var(--text-secondary)] file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent-primary)] file:text-white hover:file:bg-[var(--accent-secondary)] transition-all cursor-pointer"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
@@ -609,7 +623,7 @@ export default function CreateSolicitudWizard({
 
           {step === 5 && (
             <div className="space-y-6 animate-fade-in">
-              <h3 className="text-lg font-bold">Resumen de Solicitud</h3>
+              <h3 className="text-lg font-bold text-[var(--text-primary)]">Resumen de Solicitud</h3>
               <div className="space-y-4">
                 <div className="p-4 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-surface)]/50">
                   <h4 className="text-sm font-bold text-[var(--accent-primary)] mb-2">
@@ -618,40 +632,48 @@ export default function CreateSolicitudWizard({
                   {formData.alumnos.map((alumno, i) => (
                     <div
                       key={i}
-                      className="mb-3 border-b border-[var(--border-glass)] last:border-0 pb-3 last:pb-0"
+                      className="mb-3 border-b border-[var(--border-glass)] last:border-0 pb-3 last:pb-0 text-sm"
                     >
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Nombre:
                         </span>{" "}
-                        {[
-                          alumno.primerNombre,
-                          alumno.segundoNombre,
-                          alumno.primerApellido,
-                          alumno.segundoApellido,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
+                        <span className="text-[var(--text-primary)] font-semibold">
+                          {[
+                            alumno.primerNombre,
+                            alumno.segundoNombre,
+                            alumno.primerApellido,
+                            alumno.segundoApellido,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
                       </p>
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Grado:
                         </span>{" "}
-                        {grades.find((g) => g.id === alumno.gradeId)?.name ||
-                          "No seleccionado"}
+                        <span className="text-[var(--text-primary)]">
+                          {grades.find((g) => g.id === alumno.gradeId)?.name ||
+                            "No seleccionado"}
+                        </span>
                       </p>
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Grupo:
                         </span>{" "}
-                        {groups.find((g) => g.id === alumno.groupId)?.name ||
-                          "No seleccionado"}
+                        <span className="text-[var(--text-primary)]">
+                          {groups.find((g) => g.id === alumno.groupId)?.name ||
+                            "No seleccionado"}
+                        </span>
                       </p>
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
-                          Documentos:
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
+                          Documentos adjuntos:
                         </span>{" "}
-                        {Object.keys(alumno.documentos || {}).length}
+                        <span className="text-[var(--text-primary)] font-medium">
+                          {Object.keys(alumno.documentos || {}).length}
+                        </span>
                       </p>
                     </div>
                   ))}
@@ -664,37 +686,39 @@ export default function CreateSolicitudWizard({
                   {formData.padres.map((padre, i) => (
                     <div
                       key={i}
-                      className="mb-3 border-b border-[var(--border-glass)] last:border-0 pb-3 last:pb-0"
+                      className="mb-3 border-b border-[var(--border-glass)] last:border-0 pb-3 last:pb-0 text-sm"
                     >
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Nombre:
                         </span>{" "}
-                        {[
-                          padre.primerNombre,
-                          padre.segundoNombre,
-                          padre.primerApellido,
-                          padre.segundoApellido,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
+                        <span className="text-[var(--text-primary)] font-semibold">
+                          {[
+                            padre.primerNombre,
+                            padre.segundoNombre,
+                            padre.primerApellido,
+                            padre.segundoApellido,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
                         {padre.isPrimary && (
                           <span className="ml-2 text-[10px] uppercase font-bold bg-[var(--accent-primary)] text-white px-2 py-0.5 rounded-full shadow-glow">
                             Principal
                           </span>
                         )}
                       </p>
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Email:
                         </span>{" "}
-                        {padre.email}
+                        <span className="text-[var(--text-primary)]">{padre.email}</span>
                       </p>
-                      <p className="text-sm">
-                        <span className="text-[var(--text-secondary)]">
+                      <p>
+                        <span className="text-[var(--text-secondary)] font-medium">
                           Parentesco:
                         </span>{" "}
-                        {padre.relationship}
+                        <span className="text-[var(--text-primary)]">{padre.relationship}</span>
                       </p>
                     </div>
                   ))}
@@ -724,7 +748,7 @@ export default function CreateSolicitudWizard({
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="glass-button flex items-center gap-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-secondary)] text-white shadow-glow"
+              className="glass-button flex items-center gap-2 shadow-glow"
             >
               {loading ? "Procesando..." : "Confirmar Solicitud"}{" "}
               <Check size={16} />
