@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Award, BookOpenCheck, Plus, RefreshCw, Settings2 } from "lucide-react";
+import { Award, BookOpenCheck, Plus, RefreshCw, Settings2, X } from "lucide-react";
 import DashboardPageShell from "@/components/shared/DashboardPageShell";
 import Loader from "@/components/shared/Loader";
 import ModuleGuard from "@/components/shared/ModuleGuard";
@@ -89,15 +89,12 @@ export default function GradesPage() {
   }, [groupId, subjectId, periodId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
     void loadInitial();
   }, [loadInitial]);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
     void loadGroup();
   }, [loadGroup]);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- The async loader updates state after its request resolves.
     void loadEvaluations();
   }, [loadEvaluations]);
   useEffect(() => {
@@ -136,27 +133,215 @@ export default function GradesPage() {
     finally { setSubmitting(false); }
   }
 
-  return <ModuleGuard moduleKey="grades" requireSchoolContext={true}>
-    <DashboardPageShell className="space-y-6">
-      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-4"><div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow"><Award className="text-white" /></div><div><h1 className="gradient-text text-3xl font-extrabold">Evaluaciones</h1><p className="text-sm text-[var(--text-secondary)]">Captura evidencias y consulta el avance por período.</p></div></div>
-        <div className="flex flex-wrap gap-2"><button disabled={!hasAcademicContext || evaluationsLoading} onClick={loadEvaluations} className="glass-button"><RefreshCw size={18} />Actualizar</button>{isAdmin && <><button disabled={!hasAcademicContext} onClick={() => setShowPolicy(true)} className="glass-button"><Settings2 size={18} />Fórmula</button><button disabled={!hasAcademicContext || submitting} onClick={closePeriod} className="glass-button">Cerrar período</button></>}<button disabled={!hasAcademicContext || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button"><Plus size={18} />Nueva evaluación</button></div>
-      </header>
-      {error && <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text-primary)]">{error}</div>}
-      {loading ? <Loader minHeight="300px" /> : <>
-        <section className="glass-panel rounded-2xl p-4 grid gap-3 md:grid-cols-3">
-          <select className="glass-input" value={groupId} onChange={(event) => setGroupId(event.target.value)}>{groups.map((group) => <option key={group.id} value={group.id}>{group.grade?.name ? `${group.grade.name} · ` : ""}{group.name}</option>)}</select>
-          <select className="glass-input" value={subjectId} onChange={(event) => setSubjectId(event.target.value)}><option value="">Todas las materias</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}</select>
-          <select className="glass-input" value={periodId} onChange={(event) => setPeriodId(event.target.value)}><option value="">Todos los períodos</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.name}</option>)}</select>
-        </section>
-        <section className="glass-panel rounded-2xl overflow-hidden"><div className="p-5 border-b border-[var(--border-glass)] flex items-center gap-2"><BookOpenCheck size={19} className="text-[var(--accent-secondary)]" /><h2 className="font-bold">Evidencias registradas</h2></div><div className="divide-y divide-[var(--border-glass)]">{evaluations.length ? evaluations.map((item) => <div key={item.id} className="p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"><div><p className="font-semibold">{item.title}</p><p className="text-sm text-[var(--text-secondary)]">{item.subject.name} · {item.category.name} · {new Date(item.evaluationDate).toLocaleDateString("es-MX")}</p></div><div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]"><span>Máximo {Number(item.maxScore)} · {item._count.scores} alumnos · <span className="text-[var(--accent-secondary)]">{item.status}</span></span><Link className="glass-button !px-3 !py-2" href={`/grades/${item.id}`}>Calificar</Link></div></div>) : <p className="p-10 text-center text-[var(--text-muted)]">Aún no hay evaluaciones con estos filtros.</p>}</div></section>
-      </>}
-      {showPolicy && <Modal title="Fórmula del período" onClose={() => setShowPolicy(false)}><form onSubmit={savePolicy} className="space-y-4"><p className="text-sm text-[var(--text-secondary)]">Se aplica sólo a {activeGroup?.name}, la materia y el período seleccionados.</p><select value={policy.calculationMode} onChange={(event) => setPolicy((current) => ({ ...current, calculationMode: event.target.value as Policy["calculationMode"] }))} className="glass-input w-full"><option value="WEIGHTED_CATEGORIES">Ponderada por categorías</option><option value="AVERAGE">Promedio simple</option></select><div className="grid grid-cols-2 gap-3"><input required value={policy.scaleMax} onChange={(event) => setPolicy((current) => ({ ...current, scaleMax: Number(event.target.value) }))} type="number" min="1" step="0.01" className="glass-input w-full" placeholder="Escala máxima" /><input required value={policy.passingScore} onChange={(event) => setPolicy((current) => ({ ...current, passingScore: Number(event.target.value) }))} type="number" min="0" step="0.01" className="glass-input w-full" placeholder="Aprobatoria" /></div>{policy.calculationMode === "WEIGHTED_CATEGORIES" && <div className="space-y-2">{categories.filter((item) => item.active).map((category) => <label key={category.id} className="flex items-center justify-between gap-3 text-sm"><span>{category.name}</span><input value={policy.weights.find((item) => item.categoryId === category.id)?.weight ?? 0} onChange={(event) => setWeight(category.id, Number(event.target.value))} type="number" min="0" max="100" step="0.01" className="glass-input w-24" /></label>)}<p className="text-xs text-[var(--text-muted)]">Total: {policy.weights.reduce((total, item) => total + item.weight, 0)}%. Debe sumar 100%.</p></div>}<button disabled={submitting} className="glass-button w-full justify-center">Guardar fórmula</button></form></Modal>}
-      {showEvaluation && <Modal title="Nueva evaluación" onClose={() => setShowEvaluation(false)}><form onSubmit={createEvaluation} className="space-y-4"><input required name="title" className="glass-input w-full" placeholder="Título" /><textarea name="description" className="glass-input w-full min-h-24" placeholder="Descripción (opcional)" />{isAdmin && <select required name="teacherProfileId" className="glass-input w-full"><option value="">Selecciona docente asignado</option>{teachers.map((item) => <option key={item.teacherProfile.id} value={item.teacherProfile.id}>{item.teacherProfile.user.firstName} {item.teacherProfile.user.lastName}</option>)}</select>}<select required name="categoryId" className="glass-input w-full">{categories.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><input required name="evaluationDate" type="date" min={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.startDate} max={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.endDate} className="glass-input w-full" /><input required name="maxScore" type="number" min="0.01" step="0.01" defaultValue="10" className="glass-input w-full" /><select name="status" className="glass-input w-full"><option value="DRAFT">Borrador</option><option value="PUBLISHED">Publicada</option></select><button disabled={submitting || (isAdmin && !teachers.length)} className="glass-button w-full justify-center">Crear evaluación</button></form></Modal>}
-    </DashboardPageShell>
-  </ModuleGuard>;
+  return (
+    <ModuleGuard moduleKey="grades" requireSchoolContext={true}>
+      <DashboardPageShell className="space-y-6">
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shadow-glow">
+              <Award className="text-white" />
+            </div>
+            <div>
+              <h1 className="gradient-text text-3xl font-extrabold">Evaluaciones</h1>
+              <p className="text-sm text-[var(--text-secondary)]">Captura evidencias y consulta el avance por período.</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button disabled={!hasAcademicContext || evaluationsLoading} onClick={loadEvaluations} className="glass-button">
+              <RefreshCw size={18} />Actualizar
+            </button>
+            {isAdmin && (
+              <>
+                <button disabled={!hasAcademicContext} onClick={() => setShowPolicy(true)} className="glass-button">
+                  <Settings2 size={18} />Fórmula
+                </button>
+                <button disabled={!hasAcademicContext || submitting} onClick={closePeriod} className="glass-button">
+                  Cerrar período
+                </button>
+              </>
+            )}
+            <button disabled={!hasAcademicContext || !categories.some((item) => item.active)} onClick={() => setShowEvaluation(true)} className="glass-button">
+              <Plus size={18} />Nueva evaluación
+            </button>
+          </div>
+        </header>
+
+        {error && <div className="rounded-xl border border-[var(--danger)]/40 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text-primary)]">{error}</div>}
+
+        {loading ? (
+          <Loader minHeight="300px" />
+        ) : (
+          <>
+            <section className="glass-panel rounded-2xl p-4 grid gap-3 md:grid-cols-3">
+              <select className="glass-input" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                    {group.grade?.name ? `${group.grade.name} · ` : ""}{group.name}
+                  </option>
+                ))}
+              </select>
+              <select className="glass-input" value={subjectId} onChange={(event) => setSubjectId(event.target.value)}>
+                <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Todas las materias</option>
+                {subjects.map((subject) => (
+                  <option key={subject.id} value={subject.id} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">{subject.name}</option>
+                ))}
+              </select>
+              <select className="glass-input" value={periodId} onChange={(event) => setPeriodId(event.target.value)}>
+                <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Todos los períodos</option>
+                {periods.map((period) => (
+                  <option key={period.id} value={period.id} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">{period.name}</option>
+                ))}
+              </select>
+            </section>
+            <section className="glass-panel rounded-2xl overflow-hidden">
+              <div className="p-5 border-b border-[var(--border-glass)] flex items-center gap-2">
+                <BookOpenCheck size={19} className="text-[var(--accent-secondary)]" />
+                <h2 className="font-bold">Evidencias registradas</h2>
+              </div>
+              <div className="divide-y divide-[var(--border-glass)]">
+                {evaluations.length ? (
+                  evaluations.map((item) => (
+                    <div key={item.id} className="p-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="font-semibold">{item.title}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          {item.subject.name} · {item.category.name} · {new Date(item.evaluationDate).toLocaleDateString("es-MX")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
+                        <span>
+                          Máximo {Number(item.maxScore)} · {item._count.scores} alumnos · <span className="text-[var(--accent-secondary)]">{item.status}</span>
+                        </span>
+                        <Link className="glass-button !px-3 !py-2" href={`/grades/${item.id}`}>Calificar</Link>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="p-10 text-center text-[var(--text-muted)]">Aún no hay evaluaciones con estos filtros.</p>
+                )}
+              </div>
+            </section>
+          </>
+        )}
+
+        {showPolicy && (
+          <Modal title="Fórmula del período" onClose={() => setShowPolicy(false)}>
+            <form onSubmit={savePolicy} className="space-y-4">
+              <p className="text-xs text-[var(--text-secondary)]">Se aplica sólo a {activeGroup?.name}, la materia y el período seleccionados.</p>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Modo de Cálculo</label>
+                <select value={policy.calculationMode} onChange={(event) => setPolicy((current) => ({ ...current, calculationMode: event.target.value as Policy["calculationMode"] }))} className="glass-input w-full">
+                  <option value="WEIGHTED_CATEGORIES" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Ponderada por categorías</option>
+                  <option value="AVERAGE" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Promedio simple</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Escala Máxima</label>
+                  <input required value={policy.scaleMax} onChange={(event) => setPolicy((current) => ({ ...current, scaleMax: Number(event.target.value) }))} type="number" min="1" step="0.01" className="glass-input w-full" placeholder="Ej. 10" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Calificación Aprobatoria</label>
+                  <input required value={policy.passingScore} onChange={(event) => setPolicy((current) => ({ ...current, passingScore: Number(event.target.value) }))} type="number" min="0" step="0.01" className="glass-input w-full" placeholder="Ej. 6" />
+                </div>
+              </div>
+              {policy.calculationMode === "WEIGHTED_CATEGORIES" && (
+                <div className="space-y-2 pt-2 border-t border-[var(--border-glass)]">
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Ponderación por Categoría (%)</label>
+                  {categories.filter((item) => item.active).map((category) => (
+                    <div key={category.id} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-[var(--text-primary)]">{category.name}</span>
+                      <input value={policy.weights.find((item) => item.categoryId === category.id)?.weight ?? 0} onChange={(event) => setWeight(category.id, Number(event.target.value))} type="number" min="0" max="100" step="0.01" className="glass-input w-24 text-right" />
+                    </div>
+                  ))}
+                  <p className="text-xs text-[var(--text-muted)] mt-1">Total: {policy.weights.reduce((total, item) => total + item.weight, 0)}%. Debe sumar 100%.</p>
+                </div>
+              )}
+              <button disabled={submitting} className="glass-button w-full justify-center shadow-glow mt-2">Guardar fórmula</button>
+            </form>
+          </Modal>
+        )}
+
+        {showEvaluation && (
+          <Modal title="Nueva evaluación" onClose={() => setShowEvaluation(false)}>
+            <form onSubmit={createEvaluation} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Título de la Evaluación</label>
+                <input required name="title" className="glass-input w-full" placeholder="Ej. Examen Parcial 1" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Descripción (Opcional)</label>
+                <textarea name="description" className="glass-input w-full min-h-20" placeholder="Escribe detalles o instrucciones para la evaluación..." />
+              </div>
+              {isAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Docente Asignado</label>
+                  <select required name="teacherProfileId" className="glass-input w-full">
+                    <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Selecciona docente asignado...</option>
+                    {teachers.map((item) => (
+                      <option key={item.teacherProfile.id} value={item.teacherProfile.id} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">
+                        {item.teacherProfile.user.firstName} {item.teacherProfile.user.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Categoría de Evaluación</label>
+                <select required name="categoryId" className="glass-input w-full">
+                  <option value="" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Selecciona una categoría...</option>
+                  {categories.filter((item) => item.active).map((item) => (
+                    <option key={item.id} value={item.id} className="bg-[var(--bg-surface)] text-[var(--text-primary)]">{item.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Fecha de Aplicación</label>
+                  <input required name="evaluationDate" type="date" min={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.startDate} max={activeGroup?.schoolYear?.periods?.find((item) => item.id === periodId)?.endDate} className="glass-input w-full" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Puntaje Máximo</label>
+                  <input required name="maxScore" type="number" min="0.01" step="0.01" defaultValue="10" className="glass-input w-full" placeholder="Ej. 10" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">Estado</label>
+                <select name="status" className="glass-input w-full">
+                  <option value="DRAFT" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Borrador</option>
+                  <option value="PUBLISHED" className="bg-[var(--bg-surface)] text-[var(--text-primary)]">Publicada</option>
+                </select>
+              </div>
+              <button disabled={submitting || (isAdmin && !teachers.length)} className="glass-button w-full justify-center shadow-glow mt-2">
+                {submitting ? "Creando..." : "Crear evaluación"}
+              </button>
+            </form>
+          </Modal>
+        )}
+      </DashboardPageShell>
+    </ModuleGuard>
+  );
 }
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4"><div className="glass-panel w-full max-w-md rounded-2xl p-6"><div className="flex justify-between gap-4 mb-5"><h2 className="font-bold text-xl">{title}</h2><button onClick={onClose} className="text-[var(--text-secondary)]">Cerrar</button></div>{children}</div></div>;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
+      <div className="glass-panel !bg-[var(--bg-surface)] border border-[var(--border-glass)] w-full max-w-lg rounded-2xl shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="flex justify-between items-center pb-4 mb-4 border-b border-[var(--border-glass)]">
+          <h2 className="font-bold text-xl gradient-text">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1 rounded-lg hover:bg-white/5"
+            title="Cerrar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <div className="overflow-y-auto custom-scrollbar flex-1 pr-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
 }
+
